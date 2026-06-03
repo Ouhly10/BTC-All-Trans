@@ -1,0 +1,3884 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>أداة إنفاق المعاملات — P2PKH & SegWit & P2SH-SegWit & Taproot</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#8b7355" media="(prefers-color-scheme: light)"/>
+<meta name="theme-color" content="#1a1816" media="(prefers-color-scheme: dark)"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="Bitcoin TX"/>
+<link rel="apple-touch-icon" href="icon-180.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"/>
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+<style>
+/* يبحث عن ملف اسمه font.ttf في نفس المجلد */
+@font-face {
+  font-family: 'CustomFont';
+  src: url('./font.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* iOS Milky Palette - Warm & Soft */
+  --bg: #faf8f5;
+  --bg2: #ffffff;
+  --bg3: #f5f3f0;
+  --text: #2c2a28;
+  --text2: #6b6763;
+  --text3: #9d9a96;
+  --border: rgba(139, 115, 85, 0.08);
+  --border2: rgba(139, 115, 85, 0.14);
+  
+  /* Milky Brown Accent */
+  --accent: #8b7355;
+  --accent-dim: #f7f3ee;
+  --accent-dark: #6b5645;
+  
+  /* Soft Pastels */
+  --warn: #d4a574;
+  --warn-bg: #fdf9f4;
+  --danger: #d4a59a;
+  --danger-bg: #fdf7f5;
+  --success: #a8c4a8;
+  --success-bg: #f5faf5;
+  --info: #b4c4d4;
+  --info-bg: #f5f8fa;
+  --teal: #a8c4ba;
+  --teal-bg: #f5faf8;
+  
+  /* Cream Shades */
+  --cream: #fefdfb;
+  --cream-dark: #f5f3f0;
+  
+  /* iOS-style Shadows */
+  --shadow: 0 2px 8px rgba(139, 115, 85, 0.06);
+  --shadow-lg: 0 4px 16px rgba(139, 115, 85, 0.1);
+  --shadow-xl: 0 8px 32px rgba(139, 115, 85, 0.12);
+  
+  --mono: 'SF Mono', 'Monaco', 'Menlo', 'Courier New', monospace;
+  --sans: 'CustomFont', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
+  --r: 18px;
+  --r-sm: 14px;
+  --r-lg: 24px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1816;
+    --bg2: #2a2724;
+    --bg3: #3a3734;
+    --text: #f5f3f0;
+    --text2: #b8b5b0;
+    --text3: #7a7772;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --accent: #b8a490;
+    --accent-dim: #3a342e;
+    --accent-dark: #d4c4b0;
+    --cream: #2a2724;
+    --cream-dark: #1a1816;
+    --shadow: 0 2px 8px rgba(0,0,0,0.3);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,0.4);
+    --shadow-xl: 0 8px 32px rgba(0,0,0,0.5);
+  }
+}
+
+/* Dark mode via class (manual toggle) */
+html.dark-mode {
+  --bg: #1a2235;
+  --bg2: #1e2d45;
+  --bg3: #243352;
+  --text: #dce8f5;
+  --text2: #8ba5c0;
+  --text3: #4f6a82;
+  --border: rgba(100,160,220,0.10);
+  --border2: rgba(100,160,220,0.18);
+  --accent: #6aaddb;
+  --accent-dim: #1a2e45;
+  --accent-dark: #9ecbf0;
+  --warn: #d4a045;
+  --warn-bg: #1e1a0a;
+  --danger: #c47878;
+  --danger-bg: #1e1010;
+  --success: #52a872;
+  --success-bg: #0e1d14;
+  --info: #6090b0;
+  --info-bg: #0e1a25;
+  --teal: #4a9e8a;
+  --teal-bg: #0e1c1a;
+  --cream: #1e2d45;
+  --cream-dark: #1a2235;
+  --shadow: 0 2px 8px rgba(0,0,0,0.4);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.5);
+  --shadow-xl: 0 8px 32px rgba(0,0,0,0.6);
+}
+
+html.dark-mode body {
+  background: linear-gradient(to bottom, #1a2235 0%, #141c2e 100%);
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--bg3);
+  border: 1.5px solid var(--border2);
+  border-radius: 20px;
+  padding: 5px 10px 5px 6px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.theme-toggle-track {
+  width: 34px;
+  height: 19px;
+  border-radius: 10px;
+  background: var(--border2);
+  position: relative;
+  transition: background 0.3s cubic-bezier(0.4,0,0.2,1);
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.15);
+}
+
+html.dark-mode .theme-toggle-track {
+  background: linear-gradient(135deg, #3a6a9a 0%, #1e4a7a 100%);
+  box-shadow: 0 2px 8px rgba(58,106,154,0.4), inset 0 1px 2px rgba(255,255,255,0.1);
+}
+
+.theme-toggle-knob {
+  position: absolute;
+  top: 2.5px;
+  left: 2.5px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  transition: left 0.3s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  line-height: 1;
+}
+
+html.dark-mode .theme-toggle-knob {
+  left: 17.5px;
+}
+
+.theme-toggle-icon {
+  font-size: 13px;
+  line-height: 1;
+  transition: transform 0.4s ease;
+}
+
+html.dark-mode .theme-toggle-icon {
+  transform: rotate(20deg);
+}
+
+html, body {
+  background: linear-gradient(to bottom, var(--bg) 0%, var(--cream-dark) 100%);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.page-wrap {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+}
+
+.tool-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 1.5rem 1.8rem;
+  margin-bottom: 1.75rem;
+  border-radius: var(--r-lg);
+  background: var(--bg2);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.header-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 15px;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(139, 115, 85, 0.2);
+}
+
+.header-icon svg { 
+  width: 26px; 
+  height: 26px; 
+  stroke: rgba(255,255,255,0.95); 
+  stroke-width: 2;
+}
+
+.header-title { 
+  font-size: 17px; 
+  font-weight: 600; 
+  color: var(--text); 
+  letter-spacing: -0.3px;
+}
+
+.header-sub { 
+  font-size: 13px; 
+  color: var(--text2); 
+  margin-top: 3px;
+  font-weight: 400;
+}
+
+.network-badge {
+  margin-right: auto;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.network-badge.testnet { 
+  background: linear-gradient(135deg, #fff4e5 0%, #ffe8cc 100%); 
+  color: #d97706; 
+  border: 1px solid rgba(217,119,6,0.15);
+}
+
+.network-badge.mainnet { 
+  background: linear-gradient(135deg, #e8f8ed 0%, #d4f4dd 100%); 
+  color: #059669; 
+  border: 1px solid rgba(5,150,105,0.15);
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 1.5rem;
+  padding: 6px;
+  background: var(--bg2);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.tab {
+  flex: 1;
+  padding: 13px 18px;
+  text-align: center;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  background: transparent;
+  letter-spacing: -0.2px;
+}
+
+.tab:hover { 
+  color: var(--text); 
+  background: var(--cream);
+  transform: translateY(-1px);
+}
+
+.tab.active { 
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+  color: rgba(255,255,255,0.98); 
+  box-shadow: 0 4px 16px rgba(139, 115, 85, 0.3);
+  transform: translateY(-2px);
+}
+
+.section {
+  background: var(--bg2);
+  border-radius: var(--r-lg);
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.section-head {
+  padding: 16px 20px;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text);
+  background: linear-gradient(to bottom, var(--cream) 0%, var(--bg2) 100%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+  letter-spacing: -0.2px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+  box-shadow: 0 0 10px rgba(139, 115, 85, 0.4);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.1); }
+}
+
+.section-body { 
+  padding: 20px; 
+}
+
+.field-row { 
+  margin-bottom: 16px; 
+}
+
+.field-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: -0.2px;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 13px 16px;
+  font-size: 15px;
+  border: 1.5px solid var(--border2);
+  border-radius: var(--r-sm);
+  background: var(--cream);
+  color: var(--text);
+  font-family: inherit;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+  letter-spacing: -0.01em;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.02);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text3);
+  opacity: 0.7;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+  background: var(--bg2);
+  box-shadow: 0 0 0 4px var(--accent-dim), inset 0 1px 3px rgba(0,0,0,0.02);
+  transform: translateY(-1px);
+}
+
+textarea {
+  font-family: var(--mono);
+  font-size: 13px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.btn {
+  padding: 13px 22px;
+  border: none;
+  border-radius: var(--r-sm);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  letter-spacing: -0.3px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn:active::before {
+  width: 300px;
+  height: 300px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+  color: rgba(255,255,255,0.98);
+  box-shadow: 0 4px 16px rgba(139, 115, 85, 0.25);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(139, 115, 85, 0.35);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: var(--bg2);
+  color: var(--accent);
+  border: 1.5px solid var(--border2);
+  box-shadow: var(--shadow);
+}
+
+.btn-secondary:hover {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, var(--success) 0%, #30d158 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(52,199,89,0.3);
+}
+
+.btn-success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(52,199,89,0.4);
+}
+
+.info-box {
+  padding: 15px 18px;
+  border-radius: var(--r-sm);
+  font-size: 14px;
+  line-height: 1.6;
+  margin-top: 12px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  letter-spacing: -0.01em;
+}
+
+.info-box.danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1.5px solid rgba(212, 165, 154, 0.3);
+  box-shadow: 0 2px 8px rgba(212, 165, 154, 0.1);
+}
+
+.info-box.success {
+  background: var(--success-bg);
+  color: var(--success);
+  border: 1.5px solid rgba(168, 196, 168, 0.3);
+  box-shadow: 0 2px 8px rgba(168, 196, 168, 0.1);
+}
+
+.info-box.teal {
+  background: var(--teal-bg);
+  color: var(--teal);
+  border: 1.5px solid rgba(168, 196, 186, 0.3);
+  box-shadow: 0 2px 8px rgba(168, 196, 186, 0.1);
+}
+
+.badge {
+  font-size: 10px;
+  padding: 4px 9px;
+  border-radius: 8px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.badge-required {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid rgba(212, 165, 154, 0.2);
+}
+
+.row2, .row3 {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.row3 { grid-template-columns: 1fr 1fr 1fr; }
+
+.stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.stat-pill {
+  padding: 9px 16px;
+  background: linear-gradient(135deg, var(--cream) 0%, var(--bg2) 100%);
+  border-radius: 20px;
+  font-size: 13px;
+  color: var(--text2);
+  border: 1.5px solid var(--border);
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(139, 115, 85, 0.06);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  letter-spacing: -0.01em;
+}
+
+.stat-pill strong {
+  color: var(--accent-dark);
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.result-panel {
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  border: 1px solid var(--border2);
+  margin-top: 12px;
+}
+
+.result-head {
+  padding: 10px 14px;
+  background: linear-gradient(to bottom, var(--cream) 0%, var(--bg3) 100%);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.result-body {
+  padding: 14px;
+  background: var(--bg3);
+}
+
+.mono-block {
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.6;
+  word-break: break-all;
+  color: var(--text);
+  background: var(--bg2);
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.copy-btn {
+  padding: 5px 12px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+
+.copy-btn:hover {
+  background: var(--accent-dark);
+  transform: scale(1.05);
+}
+
+.divider {
+  border: none;
+  height: 1px;
+  background: var(--border);
+  margin: 20px 0;
+}
+
+.output-box {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--bg3);
+  border: 1.5px solid var(--border2);
+  border-radius: var(--r-sm);
+  padding: 14px;
+  color: var(--text);
+  line-height: 1.6;
+  word-break: break-all;
+}
+
+.fetch-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 8px var(--accent);
+}
+
+@keyframes pulse { 
+  0%, 100% { opacity: 1; transform: scale(1); } 
+  50% { opacity: 0.4; transform: scale(0.9); } 
+}
+
+.utxo-card {
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--bg3);
+  direction: ltr;
+}
+
+.utxo-card:hover { 
+  border-color: var(--accent); 
+  background: var(--accent-dim); 
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,113,227,0.15);
+}
+
+.utxo-card.selected { 
+  border-color: var(--accent); 
+  background: var(--accent-dim); 
+  box-shadow: 0 0 0 3px rgba(139,115,85,0.12);
+}
+
+.utxo-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.utxo-toggle-track {
+  width: 42px;
+  height: 24px;
+  border-radius: 12px;
+  background: var(--border2);
+  position: relative;
+  transition: background 0.25s cubic-bezier(0.4,0,0.2,1);
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.utxo-toggle-track.on {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+  box-shadow: 0 2px 8px rgba(139,115,85,0.3), inset 0 1px 2px rgba(255,255,255,0.1);
+}
+
+.utxo-toggle-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  transition: left 0.25s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.22);
+}
+
+.utxo-toggle-track.on .utxo-toggle-knob {
+  left: 21px;
+}
+
+.utxo-toggle-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+
+.utxo-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+}
+
+.utxo-txid { 
+  font-family: var(--mono); 
+  font-size: 11px; 
+  color: var(--text2); 
+}
+
+.utxo-val { 
+  font-family: var(--mono); 
+  font-size: 14px; 
+  font-weight: 700; 
+  color: var(--accent); 
+  text-align: right; 
+}
+
+.broadcast-step {
+  padding: 12px 16px;
+  border-radius: var(--r-sm);
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: var(--text2);
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.broadcast-step .num {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  background: var(--accent);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.broadcast-step a { 
+  color: var(--accent); 
+  text-decoration: none; 
+  font-weight: 500;
+}
+
+.broadcast-step a:hover { 
+  text-decoration: underline; 
+}
+
+.broadcast-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fetch-row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.fetch-row input { flex: 1; }
+
+/* ============================================================
+   RESPONSIVE DESIGN للشاشات الصغيرة
+   ============================================================ */
+@media (max-width: 768px) {
+  .page-wrap {
+    padding: 1.5rem 1rem 3rem;
+  }
+  
+  .tool-header {
+    padding: 1.2rem 1.4rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .header-icon {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .header-title {
+    font-size: 15px;
+  }
+  
+  .header-sub {
+    font-size: 12px;
+  }
+  
+  .network-badge {
+    font-size: 11px;
+    padding: 5px 12px;
+  }
+  
+  .tabs {
+    gap: 8px;
+  }
+  
+  .tab {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  
+  .section-head {
+    font-size: 14px;
+    padding: 14px 16px;
+  }
+  
+  .section-body {
+    padding: 16px;
+  }
+  
+  .field-label {
+    font-size: 12px;
+  }
+  
+  .btn {
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+  
+  .output-box, .mono-block {
+    font-size: 10px;
+    padding: 10px;
+  }
+  
+  .broadcast-step {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  
+  .utxo-card {
+    padding: 10px 12px;
+  }
+  
+  .utxo-txid {
+    font-size: 10px;
+    word-break: break-all;
+  }
+  
+  .utxo-val {
+    font-size: 13px;
+  }
+  
+  .row2, .row3 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  html, body {
+    font-size: 14px;
+  }
+  
+  .page-wrap {
+    padding: 1rem 0.75rem 2.5rem;
+  }
+  
+  .tool-header {
+    flex-direction: row;
+    padding: 1rem 1.2rem;
+    gap: 12px;
+  }
+  
+  .header-icon {
+    width: 42px;
+    height: 42px;
+  }
+  
+  .network-badge {
+    margin-top: 0;
+  }
+  
+  .tabs {
+    gap: 6px;
+    padding: 5px;
+  }
+  
+  .tab {
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+  
+  .fetch-row {
+    flex-direction: column;
+  }
+  
+  .fetch-row button {
+    width: 100%;
+  }
+  
+  .stat-row {
+    gap: 8px;
+  }
+  
+  .stat-pill {
+    font-size: 11px;
+    padding: 6px 12px;
+  }
+}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="tool-header">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#1D9E75" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        <circle cx="12" cy="16" r="1.5" fill="#1D9E75"/>
+      </svg>
+    </div>
+    <div>
+      <div class="header-title">أداة إنفاق المعاملات — P2PKH & SegWit & P2SH-SegWit & Taproot</div>
+      <div class="header-sub">إرسال وتوقيع وبث المعاملات — يدعم P2PKH · SegWit V0 · P2SH-SegWit · Taproot (P2TR)</div>
+    </div>
+    <div id="netBadge" class="network-badge testnet">● Testnet 4</div>
+    <div class="theme-toggle" onclick="toggleDarkMode()" title="تبديل الوضع الليلي / النهاري">
+      <div class="theme-toggle-track">
+        <div class="theme-toggle-knob"></div>
+      </div>
+      <span class="theme-toggle-icon" id="themeIcon">☀️</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="setTab('build')" id="tab-build">🔧 بناء المعاملة</div>
+    <div class="tab" onclick="setTab('sign')" id="tab-sign">✍️ التوقيع والإرسال</div>
+    <div class="tab" onclick="setTab('rbf')" id="tab-rbf">🔁 RBF</div>
+    <div class="tab" onclick="setTab('cpfp')" id="tab-cpfp">👶 CPFP</div>
+  </div>
+
+  <div id="panel-build">
+
+    <div class="section">
+      <div class="section-head"><div class="dot"></div>الشبكة وجلب الرصيد (UTXOs)</div>
+      <div class="section-body">
+        <div class="row2">
+          <div class="field-row">
+            <div class="field-label">الشبكة <span class="badge badge-required">مطلوب</span></div>
+            <select id="network" onchange="onNetChange()">
+              <option value="testnet4">Testnet 4</option>
+              <option value="testnet">Testnet 3</option>
+              <option value="mainnet">Mainnet</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <div class="field-label">عنوان المرسل <span class="badge badge-required">مطلوب</span></div>
+            <input id="queryAddr" placeholder="1… m… n… (P2PKH) | bc1q… tb1q… (SegWit) | 2… 3… (P2SH-SegWit) | bc1p… tb1p… (Taproot)" oninput="onSenderAddrChange();updateFeeHint()"/>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">💡 يدعم P2PKH (1/m/n) · Native SegWit (bc1q/tb1q) · P2SH-SegWit (2.../3...) · Taproot (bc1p/tb1p)</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary" onclick="fetchUTXOs()" id="fetchBtn" style="width:100%; margin-bottom:10px;">🔍 الاستعلام وجلب UTXOs من البلوكتشين</button>
+        <div id="fetchStatus"></div>
+        <div id="utxoList"></div>
+        <div id="balanceInfo"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><div class="dot"></div>تفاصيل المعاملة</div>
+      <div class="section-body">
+        <div class="row2">
+          <div class="field-row">
+            <div class="field-label">عنوان الوجهة (Output) <span class="badge badge-required">مطلوب</span></div>
+            <input id="destAddr" placeholder="tb1q... أو 2N... أو m/n..."/>
+          </div>
+          <div class="field-row">
+            <div class="field-label">المبلغ المُرسَل (Satoshi) <span class="badge badge-required">مطلوب</span></div>
+            <input id="sendAmount" type="number" placeholder="90000"/>
+          </div>
+        </div>
+        <div class="row3">
+          <div class="field-row">
+            <div class="field-label">رسوم الشبكة (Satoshi)</div>
+            <input id="feeRate" type="number" value="1000" placeholder="1000" oninput="updateFeeHint()"/>
+            <div id="feeRateHint" style="font-size:12px;color:var(--text3);margin-top:5px;min-height:18px;transition:color 0.2s"></div>
+          </div>
+          <div class="field-row">
+            <div class="field-label">عنوان الباقي (Change)</div>
+            <input id="changeAddr" placeholder="اتركه فارغاً للتجاهل" oninput="updateFeeHint()"/>
+          </div>
+          <div class="field-row">
+            <div class="field-label" style="margin-bottom:10px">خيارات متقدمة</div>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px 14px;background:var(--bg3);border-radius:var(--r-sm);border:1.5px solid var(--border2);transition:all 0.2s" id="rbfLabel" onclick="toggleRBF()">
+              <div id="rbfToggle" style="width:42px;height:24px;border-radius:12px;background:var(--accent);position:relative;transition:background 0.2s;flex-shrink:0">
+                <div id="rbfKnob" style="position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:white;transition:right 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.2)"></div>
+              </div>
+              <div>
+                <div style="font-weight:600;font-size:13px;color:var(--text)">🔁 تفعيل RBF (Replace-By-Fee)</div>
+                <div style="font-size:11px;color:var(--text3);margin-top:2px">يسمح باستبدال المعاملة برسوم أعلى إذا بقيت في الـ Mempool — <code style="background:var(--bg2);padding:1px 4px;border-radius:4px">nSequence = 0xFFFFFFFD</code></div>
+              </div>
+            </label>
+          </div>
+          <input id="seqHex" type="hidden" value="fffffffd"/>
+        </div>
+        <div class="field-row" style="margin-top:10px">
+          <div class="field-label">رسالة OP_RETURN (اختياري) 💬</div>
+          <input id="opReturnMsg" type="text" placeholder="اكتب رسالة لتضمينها في البلوكتشين (80 حرف كحد أقصى)"/>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">💡 سيتم تحويل النص إلى OP_RETURN output</div>
+        </div>
+        <div class="info-box" style="background:var(--info-bg);color:#5b7fa6;border:1.5px solid rgba(180,196,212,0.3);margin-top:8px;font-size:12px">
+          🔁 <strong>RBF (Replace-By-Fee)</strong> — عند التفعيل، يُضبط <code style="background:var(--bg3);padding:1px 4px;border-radius:4px">nSequence = 0xFFFFFFFD</code> لجميع المدخلات، مما يتيح لك استبدال المعاملة برسوم أعلى إذا تأخر تأكيدها في الـ Mempool (BIP125).
+        </div>
+        <div class="field-row" style="margin-top:6px">
+          <button class="btn btn-secondary" onclick="buildTx()" style="width:100%">🔨 بناء المعاملة غير الموقَّعة</button>
+        </div>
+        <div id="buildResult"></div>
+      </div>
+    </div>
+
+  </div><div id="panel-sign" style="display:none">
+
+    <div class="section">
+      <div class="section-head"><div class="dot"></div>توقيع المعاملة بالمفتاح الخاص</div>
+      <div class="section-body">
+        <div class="info-box" style="background:var(--warn-bg);color:var(--warn);border:1.5px solid rgba(212,165,116,0.3)">⚠️ المفتاح الخاص يُستخدم محلياً فقط في المتصفح ولا يُرسل لأي خادم. استخدم بيئة آمنة ومعزولة للمعاملات الحقيقية.</div>
+        <div class="info-box" style="background:var(--info-bg);color:#5b7fa6;border:1.5px solid rgba(180,196,212,0.3);margin-top:8px;font-size:13px;display:none">
+          📌 <strong>أنواع العناوين المدعومة:</strong><br>
+          • <code style="background:var(--bg3);padding:1px 4px;border-radius:4px">1… / m… / n…</code> — P2PKH (توقيع legacy)<br>
+          • <code style="background:var(--bg3);padding:1px 4px;border-radius:4px">bc1q… / tb1q…</code> — P2WPKH (native SegWit)<br>
+          • <code style="background:var(--bg3);padding:1px 4px;border-radius:4px">3… / 2…</code> — P2SH-P2WPKH (wrapped SegWit) — يظهر حقل RedeemScript تلقائياً
+        </div>
+        <div class="field-row">
+          <div class="field-label">المفتاح الخاص (WIF أو Hex 64) <span class="badge badge-required">مطلوب</span></div>
+          <input id="privKey" type="password" placeholder="cPrivateKeyWIF... أو hex 64 حرف"/>
+        </div>
+        <div class="field-row" id="redeemScriptRow" style="display:none">
+          <div class="field-label">
+            🔑 RedeemScript (P2SH-SegWit)
+            <span class="badge" style="background:var(--info-bg);color:var(--info);border:1px solid rgba(180,196,212,0.3)">اختياري</span>
+          </div>
+          <input id="redeemScriptInput" placeholder="0014… (20 بايت — يُشتق تلقائياً من المفتاح الخاص إذا تُرك فارغاً)" style="font-family:var(--mono);font-size:13px"/>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">
+            💡 إذا كان عنوانك يبدأ بـ <b>2</b> أو <b>3</b>، فهذا هو الـ redeemScript الخاص به ويبدأ بـ <code style="background:var(--bg3);padding:1px 4px;border-radius:4px">0014</code> متبوعاً بـ 20 بايت (HASH160 للمفتاح العام). يمكنك تركه فارغاً وسيتم اشتقاقه تلقائياً.
+          </div>
+        </div>
+        <div class="field-row" id="taprootTweakRow" style="display:none">
+          <div class="field-label">
+            🌿 Taproot Tweak (اختياري — Hex 64 حرف)
+            <span class="badge" style="background:var(--teal-bg);color:var(--teal);border:1px solid rgba(168,196,186,0.3)">اختياري</span>
+          </div>
+          <input id="taprootTweakInput" placeholder="فارغ = key path spending (الافتراضي)" style="font-family:var(--mono);font-size:13px" maxlength="64"/>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">
+            💡 اتركه فارغاً لـ <b>key path spending</b> العادي — الأداة ستطبق TapTweak التلقائي (BIP341). أدخل tweak مخصص فقط إذا كنت تعرف ما تفعله.
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field-label">Raw TX غير موقَّعة (hex) <span class="badge badge-required">من الخطوة السابقة</span></div>
+          <textarea id="unsignedTx" placeholder="أدخل hex المعاملة غير الموقَّعة من تبويب 'بناء المعاملة'..." rows="4"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="signTx()" id="signBtn">✍️ توقيع المعاملة</button>
+        <div id="signResult"></div>
+      </div>
+    </div>
+
+    <div class="section" id="broadcastSection" style="display:none">
+      <div class="section-head"><div class="dot"></div>Raw Transaction Hex الموقَّعة</div>
+      <div class="section-body">
+        <div id="signedTxDisplay"></div>
+        <hr class="divider"/>
+        <div style="margin-top:14px">
+          <button class="btn btn-primary" onclick="broadcastTx()" id="broadcastBtn">📡 بث المعاملة على mempool.space</button>
+        </div>
+        <div id="broadcastResult" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+  </div></div>
+
+  <!-- RBF STANDALONE PANEL -->
+  <div id="panel-rbf" style="display:none">
+
+    <!-- Step 1: Build RBF -->
+    <div class="section">
+      <div class="section-head">
+        <div class="dot"></div>
+        <span style="font-weight:700">① بناء معاملة RBF</span>
+        <span style="font-size:11px;color:var(--text3);font-weight:400;margin-right:auto">استخراج وإعادة بناء برسوم أعلى</span>
+      </div>
+      <div class="section-body">
+        <div class="info-box" style="background:var(--info-bg);color:#5b7fa6;border:1.5px solid rgba(180,196,212,0.3);margin-bottom:14px;font-size:13px">
+          📌 الصق هنا الـ Raw TX الموقَّعة التي أُرسلت إلى الـ Mempool وتريد استبدالها. ستُستخرج منها الـ inputs والـ outputs تلقائياً وتُبنى معاملة جديدة برسوم أعلى.
+        </div>
+        <div class="field-row">
+          <div class="field-label">Raw TX الأصلية (hex موقَّعة) <span class="badge badge-required">مطلوب</span></div>
+          <textarea id="rbfOrigTx" placeholder="الصق هنا hex المعاملة الأصلية..." rows="4" style="font-family:var(--mono);font-size:12px"></textarea>
+        </div>
+        <div class="row3">
+          <div class="field-row">
+            <div class="field-label">الرسوم الأصلية (Satoshi) <span class="badge badge-required">مطلوب</span></div>
+            <input id="rbfOldFee" type="number" placeholder="مثال: 50" min="1" oninput="updateRbfFeeHint()"/>
+            <div id="rbfOldFeeHint" style="font-size:12px;color:var(--text3);margin-top:5px;min-height:18px;transition:color 0.2s"></div>
+          </div>
+          <div class="field-row">
+            <div class="field-label">الرسوم الجديدة (Satoshi) <span class="badge badge-required">مطلوب</span></div>
+            <input id="rbfNewFee" type="number" placeholder="مثال: 100" min="1" oninput="updateRbfFeeHint()"/>
+            <div id="rbfNewFeeHint" style="font-size:12px;color:var(--text3);margin-top:5px;min-height:18px;transition:color 0.2s"></div>
+          </div>
+          <div class="field-row">
+            <div class="field-label">رقم output الـ Change لخصم الفرق منه</div>
+            <input id="rbfChangeIdx" type="number" placeholder="0، 1، 2..." min="0" value="1"/>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">اضغط على الـ output في التحليل لاختياره</div>
+          </div>
+        </div>
+        <button class="btn btn-secondary" onclick="analyzeRbfTx()" style="width:100%;margin-bottom:10px">🔍 تحليل المعاملة واستخراج التفاصيل</button>
+        <div id="rbfAnalysis"></div>
+        <div id="rbfBuildArea" style="display:none">
+          <hr class="divider"/>
+          <button class="btn btn-primary" onclick="buildRbfTx()" style="width:100%">🔨 بناء معاملة RBF غير موقَّعة</button>
+          <div id="rbfBuildResult"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Sign RBF TX -->
+    <div class="section">
+      <div class="section-head">
+        <div class="dot"></div>
+        <span style="font-weight:700">② التوقيع</span>
+        <span style="font-size:11px;color:var(--text3);font-weight:400;margin-right:auto">وقّع معاملة RBF بالمفتاح الخاص</span>
+      </div>
+      <div class="section-body">
+        <div class="info-box" style="background:var(--warn-bg);color:var(--warn);border:1.5px solid rgba(212,165,116,0.3)">⚠️ المفتاح الخاص يُستخدم محلياً فقط في المتصفح ولا يُرسل لأي خادم. استخدم بيئة آمنة ومعزولة للمعاملات الحقيقية.</div>
+        <div class="field-row" style="margin-top:14px">
+          <div class="field-label">المفتاح الخاص (WIF أو Hex 64) <span class="badge badge-required">مطلوب</span></div>
+          <input id="rbfPrivKey" type="password" placeholder="cPrivateKeyWIF... أو hex 64 حرف"/>
+        </div>
+        <div class="field-row" id="rbfRedeemScriptRow" style="display:none">
+          <div class="field-label">
+            🔑 RedeemScript (P2SH-SegWit)
+            <span class="badge" style="background:var(--info-bg);color:var(--info);border:1px solid rgba(180,196,212,0.3)">اختياري</span>
+          </div>
+          <input id="rbfRedeemScriptInput" placeholder="0014… (يُشتق تلقائياً إذا تُرك فارغاً)" style="font-family:var(--mono);font-size:13px"/>
+        </div>
+        <div class="field-row" id="rbfTaprootTweakRow" style="display:none">
+          <div class="field-label">
+            🌿 Taproot Tweak (اختياري — Hex 64 حرف)
+            <span class="badge" style="background:var(--teal-bg);color:var(--teal);border:1px solid rgba(168,196,186,0.3)">اختياري</span>
+          </div>
+          <input id="rbfTaprootTweakInput" placeholder="فارغ = key path spending (الافتراضي)" style="font-family:var(--mono);font-size:13px" maxlength="64"/>
+        </div>
+        <div class="field-row">
+          <div class="field-label">عنوان المرسل (لتحديد نوع التوقيع) <span class="badge badge-required">مطلوب</span></div>
+          <input id="rbfSenderAddr" placeholder="1… m… n… | bc1q… tb1q… | 2… 3… | bc1p… tb1p…" oninput="onRbfAddrChange()"/>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">💡 يدعم P2PKH · Native SegWit · P2SH-SegWit · Taproot</div>
+        </div>
+        <div class="field-row" id="rbfInputValuesSection">
+          <div class="field-label" style="margin-bottom:10px">
+            قيم الـ Inputs (Satoshi) — مطلوبة لـ SegWit/Taproot
+            <span class="badge badge-required">للـ SegWit</span>
+            <button type="button" id="rbfFetchValuesBtn" onclick="rbfFetchInputValues()" style="margin-right:auto;padding:5px 12px;background:var(--accent);color:white;border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:inherit">
+              ⬇️ جلب تلقائي
+            </button>
+          </div>
+          <input type="hidden" id="rbfInputValue" value=""/>
+          <div id="rbfInputValuesList">
+            <input id="rbfInputVal_0" type="number" placeholder="قيمة UTXO بالـ Satoshi (ادخل القيمة أو اضغط جلب تلقائي بعد تحليل المعاملة)" oninput="document.getElementById('rbfInputValue').value=this.value"/>
+          </div>
+          <div id="rbfFetchValuesStatus" style="font-size:11px;color:var(--text3);margin-top:4px">💡 اضغط "جلب تلقائي" بعد تحليل المعاملة في الخطوة ① لجلب قيمة كل UTXO من البلوكتشين تلقائياً</div>
+        </div>
+        <div class="field-row">
+          <div class="field-label">Raw TX غير موقَّعة (hex) <span class="badge badge-required">من الخطوة ①</span></div>
+          <textarea id="rbfUnsignedTx" placeholder="ستُملأ تلقائياً من الخطوة ① — أو أدخلها يدوياً..." rows="4" style="font-family:var(--mono);font-size:12px"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="signRbfTx()" style="width:100%">✍️ توقيع معاملة RBF</button>
+        <div id="rbfSignResult"></div>
+      </div>
+    </div>
+
+    <!-- Step 3: Broadcast RBF TX -->
+    <div class="section" id="rbfBroadcastSection" style="display:none">
+      <div class="section-head">
+        <div class="dot"></div>
+        <span style="font-weight:700">③ الإرسال</span>
+        <span style="font-size:11px;color:var(--text3);font-weight:400;margin-right:auto">بث معاملة RBF إلى الشبكة</span>
+      </div>
+      <div class="section-body">
+        <div id="rbfSignedTxDisplay"></div>
+        <hr class="divider"/>
+        <div style="margin-top:14px">
+          <button class="btn btn-primary" onclick="broadcastRbfTx()" id="rbfBroadcastBtn">📡 بث معاملة RBF على mempool.space</button>
+        </div>
+        <div id="rbfBroadcastResult" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============================================================
+       CPFP PANEL
+       ============================================================ -->
+  <div id="panel-cpfp" style="display:none">
+
+    <!-- شرح CPFP -->
+    <div class="section">
+      <div class="section-head"><div class="dot"></div>💡 كيف يعمل CPFP؟</div>
+      <div class="section-body">
+        <div class="info-box" style="background:var(--info-bg);color:#5b7fa6;border:1.5px solid rgba(180,196,212,0.3);font-size:13px;line-height:1.8">
+          <strong>Child Pays For Parent (CPFP)</strong> هو أسلوب لتسريع معاملة عالقة في الـ Mempool:<br>
+          <div style="margin-top:8px;display:grid;gap:6px">
+            <div>👴 <strong>معاملة الأب (Parent TX):</strong> المعاملة العالقة التي رسومها منخفضة — <em>أنت إما المُرسِل أو المُستقبِل فيها</em></div>
+            <div>👶 <strong>معاملة الابن (Child TX):</strong> معاملة جديدة تُنشئها أنت — تُنفق الـ output الذي استقبلته من معاملة الأب، وتضع فيها رسوماً عالية</div>
+            <div>⛏️ <strong>النتيجة:</strong> المعدّنون يرون أن الـ "package" (الأب + الابن) معاً يحقق ربحاً جيداً، فيضمّون الاثنين في نفس البلوك</div>
+          </div>
+          <div style="margin-top:10px;padding:8px 12px;background:rgba(91,127,166,0.08);border-radius:8px;font-size:12px">
+            🔑 <strong>المفتاح الخاص المطلوب:</strong> هو المفتاح الخاص لـ <u>عنوانك الذي استقبل الـ output في معاملة الأب</u> — أي عنوان الابن الذي ستُنفق منه. إذا كنت المُرسِل في الأب، فتحتاج مفتاح عنوان الـ change.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head"><div class="dot"></div>① معاملة الأب (Parent TX) — المعاملة العالقة</div>
+      <div class="section-body">
+        <div class="info-box" style="background:var(--warn-bg);color:#a07040;border:1.5px solid rgba(212,165,116,0.3);font-size:12px;margin-bottom:14px">
+          📌 أدخل هنا الـ TXID للمعاملة العالقة التي تريد تسريعها — سواء كنت المُرسِل أو المُستقبِل فيها.
+        </div>
+        <div class="field-row">
+          <div class="field-label">TXID معاملة الأب <span class="badge badge-required">مطلوب</span></div>
+          <input id="cpfpParentTxid" placeholder="الـ TXID الذي تريد تسريعه (64 حرف hex)" oninput="cpfpOnTxidChange()" style="font-family:var(--mono);font-size:13px"/>
+        </div>
+        <button class="btn btn-secondary" onclick="cpfpAnalyzeParent()" style="width:100%;margin-bottom:10px">🔍 تحليل وجلب تفاصيل المعاملة</button>
+        <div id="cpfpParentResult"></div>
+      </div>
+    </div>
+
+    <div class="section" id="cpfpChildSection" style="display:none">
+      <div class="section-head"><div class="dot"></div>② بناء معاملة الابن (Child TX) — المعاملة المُسرِّعة</div>
+      <div class="section-body">
+
+        <div class="info-box" style="background:var(--accent-dim);border:1.5px solid rgba(139,115,85,0.2);font-size:12px;margin-bottom:14px;line-height:1.7">
+          ⬇️ اختر من القائمة أدناه <strong>الـ Output الذي يعود لك</strong> في معاملة الأب (الـ output الذي استقبلته أنت).<br>
+          هذا الـ output سيكون الـ <strong>Input</strong> في معاملة الابن — وستحتاج مفتاحه الخاص للتوقيع.
+        </div>
+
+        <div class="field-row">
+          <div class="field-label">اختر الـ Output الذي تملكه في معاملة الأب <span class="badge badge-required">مطلوب</span></div>
+          <div id="cpfpOutputsList" style="margin-top:4px"></div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-label">
+            عنوان الأب (عنوانك الذي استقبل الـ output)
+            <span class="badge badge-required">مطلوب</span>
+          </div>
+          <input id="cpfpMyAddr" placeholder="يُملأ تلقائياً عند اختيار الـ output — أو أدخله يدوياً" oninput="cpfpUpdateCalc()"/>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">
+            💡 هذا هو <strong>عنوان الأب</strong> — العنوان الذي <u>استقبل</u> الـ output في معاملة الأب. يجب أن يطابق الـ output المختار.
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-label">عنوان الابن (عنوان الوجهة — أين ترسل الباقي)</div>
+          <input id="cpfpDestAddr" placeholder="اتركه فارغاً لإعادة الإرسال لنفس عنوانك"/>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">
+            💡 هذا هو <strong>عنوان الابن</strong> — عنوان الوجهة الذي سيستقبل الـ output بعد خصم الرسوم. يمكن أن يكون نفس عنوانك أو عنواناً آخر.
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-label">الـ target fee rate المطلوب (sat/vB) <span class="badge badge-required">مطلوب</span></div>
+          <input id="cpfpTargetRate" type="number" value="10" min="1" oninput="cpfpUpdateCalc()"/>
+          <div id="cpfpCalcResult" style="font-size:12px;margin-top:8px;min-height:18px"></div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-label">المفتاح الخاص (WIF أو Hex 64) <span class="badge badge-required">مطلوب</span></div>
+          <input id="cpfpPrivKey" type="password" placeholder="المفتاح الخاص لعنوان الأب (الذي استقبل الـ output)"/>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">
+            🔑 <strong>هذا هو مفتاح "عنوان الأب"</strong> — المفتاح الخاص للعنوان الذي استقبل الـ output في معاملة الأب. بدونه لا يمكن إنشاء معاملة الابن.<br>
+            🔒 يُستخدم محلياً في المتصفح فقط ولا يُرسل لأي خادم.
+          </div>
+        </div>
+
+        <div id="cpfpTaprootTweakRow" style="display:none" class="field-row">
+          <div class="field-label">
+            🌿 Taproot Tweak (اختياري)
+            <span class="badge" style="background:var(--teal-bg);color:var(--teal);border:1px solid rgba(168,196,186,0.3)">اختياري</span>
+          </div>
+          <input id="cpfpTaprootTweak" placeholder="32 bytes hex — اتركه فارغاً للـ key-path العادي" style="font-family:var(--mono);font-size:13px"/>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">💡 للعناوين التي تبدأ بـ bc1p / tb1p. اتركه فارغاً للتوقيع العادي (BIP341 key path).</div>
+        </div>
+        <div id="cpfpRedeemScriptRow" style="display:none" class="field-row">
+          <div class="field-label">
+            🔑 Redeem Script (P2SH-SegWit)
+            <span class="badge" style="background:var(--info-bg);color:var(--info);border:1px solid rgba(180,196,212,0.3)">اختياري</span>
+          </div>
+          <input id="cpfpRedeemScript" placeholder="0014... (hex) — يُشتق تلقائياً إذا تُرك فارغاً" style="font-family:var(--mono);font-size:13px"/>
+          <div style="font-size:11px;color:var(--text3);margin-top:4px">💡 للعناوين التي تبدأ بـ 2 أو 3. يمكن تركه فارغاً ليُشتق تلقائياً من المفتاح الخاص.</div>
+        </div>
+
+        <button class="btn btn-primary" onclick="cpfpBuildAndSign()" style="width:100%;margin-top:8px">✍️ بناء وتوقيع معاملة الابن</button>
+        <div id="cpfpSignResult" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+    <div class="section" id="cpfpBroadcastSection" style="display:none">
+      <div class="section-head"><div class="dot"></div>③ البث — إرسال معاملة الابن إلى الشبكة</div>
+      <div class="section-body">
+        <div class="info-box" style="background:var(--success-bg);color:#5a8a5a;border:1.5px solid rgba(168,196,168,0.3);font-size:12px;margin-bottom:12px">
+          ✅ تم بناء وتوقيع معاملة الابن. اضغط "بث" لإرسالها إلى الشبكة — عند قبولها ستُسرِّع معاملة الأب تلقائياً.
+        </div>
+        <div id="cpfpSignedDisplay"></div>
+        <button class="btn btn-primary" onclick="cpfpBroadcast()" id="cpfpBroadcastBtn" style="width:100%;margin-top:10px">📡 بث معاملة CPFP</button>
+        <div id="cpfpBroadcastResult" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+  </div></div><script>
+/* ============================================================
+   GLOBALS
+   ============================================================ */
+const API = {
+  testnet4: 'https://mempool.space/testnet4/api',
+  testnet:  'https://mempool.space/testnet/api',
+  mainnet:  'https://mempool.space/api'
+};
+
+let selectedUTXOs = [];
+let signedHex     = null;
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+function setTab(t) {
+  ['build','sign','rbf','cpfp'].forEach(id => {
+    document.getElementById('panel-' + id).style.display = id === t ? '' : 'none';
+    const el = document.getElementById('tab-' + id);
+    el.className = 'tab' + (id === t ? ' active' : '');
+  });
+}
+
+function onRbfAddrChange() {
+  const addr = document.getElementById('rbfSenderAddr').value.trim();
+  const rsRow = document.getElementById('rbfRedeemScriptRow');
+  const trRow = document.getElementById('rbfTaprootTweakRow');
+  if (rsRow) rsRow.style.display = (addr.startsWith('2') || addr.startsWith('3')) ? '' : 'none';
+  if (trRow) trRow.style.display = (addr.startsWith('bc1p') || addr.startsWith('tb1p')) ? '' : 'none';
+}
+
+function getNet() { return document.getElementById('network').value; }
+
+function onNetChange() {
+  const n = getNet();
+  const badge = document.getElementById('netBadge');
+  const labels = { mainnet: 'Mainnet', testnet: 'Testnet 3', testnet4: 'Testnet 4' };
+  badge.textContent = '● ' + (labels[n] || n);
+  badge.className   = 'network-badge ' + (n === 'mainnet' ? 'mainnet' : 'testnet');
+  updateBroadcastLinks();
+}
+
+/* Show/hide redeemScript / taproot fields based on sender address type */
+function onSenderAddrChange() {
+  const addr = document.getElementById('queryAddr').value.trim();
+  const rsRow  = document.getElementById('redeemScriptRow');
+  const trRow  = document.getElementById('taprootTweakRow');
+  if (rsRow) rsRow.style.display = (addr.startsWith('2') || addr.startsWith('3')) ? '' : 'none';
+  if (trRow) trRow.style.display = (addr.startsWith('bc1p') || addr.startsWith('tb1p')) ? '' : 'none';
+}
+
+/* ============================================================
+   UTILITIES — bytes / hex / encoding
+   ============================================================ */
+function hexToBytes(hex) {
+  const b = [];
+  for (let i = 0; i < hex.length; i += 2) b.push(parseInt(hex.substr(i, 2), 16));
+  return b;
+}
+
+function bytesToHex(bytes) {
+  return bytes.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function sha256hex(hex) {
+  return CryptoJS.SHA256(CryptoJS.enc.Hex.parse(hex)).toString();
+}
+
+function hash160(hex) {
+  const s = sha256hex(hex);
+  return CryptoJS.RIPEMD160(CryptoJS.enc.Hex.parse(s)).toString();
+}
+
+function hash256(hex) {
+  return sha256hex(sha256hex(hex));
+}
+
+function reverseHex(hex) {
+  return hex.match(/../g).reverse().join('');
+}
+
+function varInt(n) {
+  if (n < 0xfd) return n.toString(16).padStart(2, '0');
+  if (n <= 0xffff) return 'fd' + uint16LE(n);
+  return 'fe' + uint32LE(n);
+}
+
+function varIntBytes(n) {
+  if (n < 0xfd) return [n];
+  if (n <= 0xffff) return [0xfd, n & 0xff, (n >> 8) & 0xff];
+  return [0xfe, n & 0xff, (n >> 8) & 0xff, (n >> 16) & 0xff, (n >> 24) & 0xff];
+}
+
+function uint16LE(n) {
+  return [(n & 0xff), (n >> 8) & 0xff].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function uint32LE(n) {
+  const b = [];
+  for (let i = 0; i < 4; i++) { b.push(n & 0xff); n >>>= 8; }
+  return b.map(x => x.toString(16).padStart(2, '0')).join('');
+}
+
+function uint32LEBytes(n) {
+  return [(n & 0xff), (n >> 8) & 0xff, (n >> 16) & 0xff, (n >>> 24) & 0xff];
+}
+
+function uint64LE(n) {
+  const lo = n & 0xffffffff;
+  const hi = Math.floor(n / 0x100000000);
+  return uint32LE(lo) + uint32LE(hi);
+}
+
+function uint64LEBytes(n) {
+  const lo = n & 0xffffffff;
+  const hi = Math.floor(n / 0x100000000);
+  return [...uint32LEBytes(lo), ...uint32LEBytes(hi)];
+}
+
+function readUint32LE(b, o) {
+  return (b[o] | (b[o+1] << 8) | (b[o+2] << 16) | (b[o+3] << 24)) >>> 0;
+}
+
+/* ============================================================
+   BASE58CHECK
+   ============================================================ */
+const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+
+function base58checkDecode(addr) {
+  // Count leading '1' chars -> each represents a 0x00 byte
+  let leadingZeros = 0;
+  for (const c of addr) { if (c === '1') leadingZeros++; else break; }
+
+  let num = 0n;
+  for (const c of addr) {
+    const idx = B58.indexOf(c);
+    if (idx < 0) throw new Error('Invalid base58 character: ' + c);
+    num = num * 58n + BigInt(idx);
+  }
+
+  let hex = num.toString(16);
+  if (hex.length % 2) hex = '0' + hex;
+
+  // Prepend the leading zero bytes
+  hex = '00'.repeat(leadingZeros) + hex;
+
+  return hexToBytes(hex);
+}
+
+/* ============================================================
+   BECH32
+   ============================================================ */
+function bech32Decode(addr) {
+  const CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
+  const sep = addr.lastIndexOf('1');
+  const data = addr.slice(sep + 2, -6).split('').map(c => CHARSET.indexOf(c));
+  const res = [];
+  let acc = 0, bits = 0;
+  for (const v of data) {
+    acc = (acc << 5) | v; bits += 5;
+    if (bits >= 8) { bits -= 8; res.push((acc >> bits) & 0xff); }
+  }
+  return res;
+}
+
+/* ============================================================
+   ADDRESS DERIVATION
+   ============================================================ */
+function addressToScriptPK(addr) {
+  // Taproot P2TR: bc1p / tb1p (bech32m, witness v1, 32 bytes)
+  if (addr.startsWith('bc1p') || addr.startsWith('tb1p')) {
+    const decoded = bech32mDecode(addr);
+    if (!decoded || decoded.length !== 32) throw new Error('عنوان Taproot غير صالح: يجب أن يكون 32 بايت.');
+    return '5120' + bytesToHex(decoded);
+  }
+  // P2WPKH / P2WSH — bech32, witness v0
+  // كلاهما يبدأ بـ bc1q/tb1q — نميّز بطول الـ decoded data
+  // P2WPKH = 20 bytes (0014), P2WSH = 32 bytes (0020)
+  if (addr.startsWith('tb1') || addr.startsWith('bc1')) {
+    const decoded = bech32Decode(addr);
+    if (decoded.length === 20) return '0014' + bytesToHex(decoded);
+    if (decoded.length === 32) return '0020' + bytesToHex(decoded);
+    throw new Error('طول witness program غير متوقع: ' + decoded.length + ' bytes');
+  }
+  const bytes  = base58checkDecode(addr);
+  const prefix = bytes[0];
+  const hashH  = bytesToHex(bytes.slice(1, 21));
+  if (prefix === 0x00 || prefix === 0x6f) return '76a914' + hashH + '88ac';
+  if (prefix === 0x05 || prefix === 0xc4) return 'a914' + hashH + '87';
+  throw new Error('نوع عنوان غير مدعوم: تأكد من إدخال عنوان P2PKH أو Native SegWit أو Taproot.');
+}
+
+function detectScriptType(addr) {
+  if (!addr) return null;
+  if (addr.startsWith('bc1p') || addr.startsWith('tb1p')) return 'p2tr';
+  if (addr.startsWith('tb1q') || addr.startsWith('bc1q')) return 'p2wpkh';
+  if (addr.startsWith('1') || addr.startsWith('m') || addr.startsWith('n')) return 'p2pkh';
+  if (addr.startsWith('2') || addr.startsWith('3')) return 'p2sh-p2wpkh';
+  return null;
+}
+
+/* ============================================================
+   BECH32M DECODE (BIP350) — لعناوين Taproot bc1p / tb1p
+   ============================================================ */
+const BECH32_CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
+const BECH32M_CONST  = 0x2bc830a3;
+
+function bech32mPolymod(values) {
+  const GEN = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3];
+  let chk = 1;
+  for (const v of values) {
+    const b = chk >> 25;
+    chk = ((chk & 0x1ffffff) << 5) ^ v;
+    for (let i = 0; i < 5; i++) if ((b >> i) & 1) chk ^= GEN[i];
+  }
+  return chk;
+}
+
+function bech32mHrpExpand(hrp) {
+  const ret = [];
+  for (let i = 0; i < hrp.length; i++) ret.push(hrp.charCodeAt(i) >> 5);
+  ret.push(0);
+  for (let i = 0; i < hrp.length; i++) ret.push(hrp.charCodeAt(i) & 31);
+  return ret;
+}
+
+function convertBits(data, fromWidth, toWidth, pad) {
+  let acc = 0;
+  let bits = 0;
+  const ret = [];
+  const maxv = (1 << toWidth) - 1;
+  for (let p = 0; p < data.length; ++p) {
+    const value = data[p];
+    if (value < 0 || (value >> fromWidth) !== 0) return null;
+    acc = (acc << fromWidth) | value;
+    bits += fromWidth;
+    while (bits >= toWidth) {
+      bits -= toWidth;
+      ret.push((acc >> bits) & maxv);
+    }
+  }
+  if (pad) {
+    if (bits > 0) ret.push((acc << (toWidth - bits)) & maxv);
+  } else if (bits >= fromWidth || ((acc << (toWidth - bits)) & maxv)) {
+    return null;
+  }
+  return ret;
+}
+
+function bech32mDecode(bechStr) {
+  const str = bechStr.toLowerCase();
+  const pos = str.lastIndexOf('1');
+  if (pos < 1 || pos + 7 > str.length) return null;
+  const hrp  = str.slice(0, pos);
+  const data = [];
+  for (let i = pos + 1; i < str.length; i++) {
+    const d = BECH32_CHARSET.indexOf(str[i]);
+    if (d === -1) return null;
+    data.push(d);
+  }
+  // تحقق من checksum bech32m
+  if (bech32mPolymod([...bech32mHrpExpand(hrp), ...data]) !== BECH32M_CONST) return null;
+  // تحويل البيانات من 5 بت إلى 8 بت (مع استثناء بايت النسخة Witness Version)
+  const decodedData = convertBits(data.slice(1, -6), 5, 8, false);
+  return decodedData;
+}
+
+/* ============================================================
+   SCHNORR SIGNATURES — BIP340
+   ============================================================ */
+function sha256Bytes(bytes) {
+  return hexToBytes(CryptoJS.SHA256(CryptoJS.enc.Hex.parse(bytesToHex(bytes))).toString());
+}
+
+function taggedHash(tag, data) {
+  const tagBytes  = Array.from(new TextEncoder().encode(tag));
+  const tagHash   = sha256Bytes(tagBytes);
+  return sha256Bytes([...tagHash, ...tagHash, ...data]);
+}
+
+function schnorrSign(msgHash32, privBytes, auxRand32) {
+  const secp  = getSecp256k1();
+  const d0    = secp.toBig(privBytes);
+  if (d0 === 0n || d0 >= secp.N) throw new Error('مفتاح خاص غير صالح');
+
+  const P = secp.pointMultiply(secp.G, d0);
+  // d = d0 if P.y even, else N - d0
+  const d = (secp.toBig(P.y) & 1n) === 0n ? d0 : secp.N - d0;
+
+  // t = d XOR taggedHash('BIP0340/aux', auxRand)
+  const auxHash = taggedHash('BIP0340/aux', auxRand32 || new Array(32).fill(0));
+  const dBytes  = hexToBytes(d.toString(16).padStart(64, '0'));
+  const t       = dBytes.map((b, i) => b ^ auxHash[i]);
+
+  // k0 = int(taggedHash('BIP0340/nonce', t || P.x || msg)) mod N
+  const Px  = Array.from(P.x);
+  const k0Hash = taggedHash('BIP0340/nonce', [...t, ...Px, ...msgHash32]);
+  const k0     = secp.toBig(k0Hash) % secp.N;
+  if (k0 === 0n) throw new Error('k0 = 0، أعد المحاولة');
+
+  const R  = secp.pointMultiply(secp.G, k0);
+  const k  = (secp.toBig(R.y) & 1n) === 0n ? k0 : secp.N - k0;
+  const Rx = Array.from(R.x);
+
+  // e = int(taggedHash('BIP0340/challenge', R.x || P.x || msg)) mod N
+  const eHash = taggedHash('BIP0340/challenge', [...Rx, ...Px, ...msgHash32]);
+  const e     = secp.toBig(eHash) % secp.N;
+
+  const sigS  = secp.fromBig((k + e * d) % secp.N, 32);
+  // إرجاع 64 بايت: R.x(32) || s(32)
+  return [...Rx, ...sigS];
+}
+
+/* ============================================================
+   TAPROOT KEY TWEAKING — BIP341
+   ============================================================ */
+function taprootTweakPrivkey(privBytes, customTweakBytes) {
+  const secp = getSecp256k1();
+  const d0   = secp.toBig(privBytes);
+  const P    = secp.pointMultiply(secp.G, d0);
+
+  // Normalize: negate if P.y is odd
+  const d = (secp.toBig(P.y) & 1n) === 0n ? d0 : secp.N - d0;
+
+  // tweak = customTweak إذا وُجد، وإلا taggedHash('TapTweak', P.x)
+  let tweak;
+  if (customTweakBytes && customTweakBytes.length === 32) {
+    tweak = secp.toBig(customTweakBytes);
+  } else {
+    tweak = secp.toBig(taggedHash('TapTweak', Array.from(P.x)));
+  }
+
+  const tweakedD = (d + tweak) % secp.N;
+  if (tweakedD === 0n) throw new Error('tweaked private key = 0، حالة غير متوقعة');
+  return secp.fromBig(tweakedD, 32);
+}
+
+/* ============================================================
+   TAPROOT SIGHASH — BIP341 (key path spending)
+   ============================================================ */
+function computeTaprootSighash(txHex, inputIdx, utxos) {
+  const txBytes = hexToBytes(txHex);
+  let offset = 4; // skip version
+  const inCount = txBytes[offset++];
+  const inputs = [];
+  for (let i = 0; i < inCount; i++) {
+    const txid = txBytes.slice(offset, offset + 32); offset += 32;
+    const vout = readUint32LE(txBytes, offset);       offset += 4;
+    const sl   = txBytes[offset++];                   offset += sl;
+    const seq  = txBytes.slice(offset, offset + 4);   offset += 4;
+    inputs.push({ txid, vout, seq });
+  }
+  const outCount = txBytes[offset++];
+  const outputs = [];
+  for (let i = 0; i < outCount; i++) {
+    const value  = txBytes.slice(offset, offset + 8); offset += 8;
+    const sl     = txBytes[offset++];
+    const script = txBytes.slice(offset, offset + sl); offset += sl;
+    outputs.push({ value, script });
+  }
+  const nVersion  = txBytes.slice(0, 4);
+  const nLocktime = txBytes.slice(offset, offset + 4);
+
+  // sha_prevouts
+  const prevoutsData = inputs.flatMap(i => [...i.txid, ...uint32LEBytes(i.vout)]);
+  const shaPrevouts  = sha256Bytes(prevoutsData);
+
+  // sha_amounts
+  const amountsData = utxos.flatMap(u => uint64LEBytes(u.value));
+  const shaAmounts  = sha256Bytes(amountsData);
+
+  // sha_scriptpubkeys
+  const spkData = utxos.flatMap(u => {
+    const spk = hexToBytes(u.scriptPubKey || addressToScriptPK(document.getElementById('queryAddr').value.trim()));
+    return [...varIntBytes(spk.length), ...spk];
+  });
+  const shaScriptPubkeys = sha256Bytes(spkData);
+
+  // sha_sequences
+  const seqData = inputs.flatMap(i => i.seq);
+  const shaSequences = sha256Bytes(seqData);
+
+  // sha_outputs
+  const outData = outputs.flatMap(o => [...o.value, ...varIntBytes(o.script.length), ...o.script]);
+  const shaOutputs = sha256Bytes(outData);
+
+  // preimage بـ SIGHASH_DEFAULT (0x00) — BIP341 key path، non-ANYONECANPAY
+  // الترتيب: epoch || hash_type || version || locktime || sha_prevouts || sha_amounts ||
+  //           sha_scriptpubkeys || sha_sequences || sha_outputs || spend_type || input_index
+  const spendType = 0x00; // key path، no annex
+  const preimage = [
+    0x00,              // Epoch (BIP341 يفرض أن تبدأ بـ 0x00)
+    0x00,              // hash_type = SIGHASH_DEFAULT
+    ...nVersion,
+    ...nLocktime,
+    ...shaPrevouts,
+    ...shaAmounts,
+    ...shaScriptPubkeys,
+    ...shaSequences,
+    ...shaOutputs,
+    spendType,
+    ...uint32LEBytes(inputIdx)
+  ];
+
+  return taggedHash('TapSighash', preimage);
+}
+
+/* ============================================================
+   SIGN P2TR (Taproot Key Path)
+   ============================================================ */
+function signP2TR(txHex, privBytes, utxos, customTweakHex) {
+  const customTweak = (customTweakHex && customTweakHex.length === 64)
+    ? hexToBytes(customTweakHex) : null;
+
+  const tweakedPriv = taprootTweakPrivkey(privBytes, customTweak);
+
+  // ── تحقق: اشتقاق الـ tweaked public key والتأكد أنه يطابق scriptPubKey ──
+  const secp = getSecp256k1();
+  const tweakedD = secp.toBig(tweakedPriv);
+  const Q = secp.pointMultiply(secp.G, tweakedD);
+  const tweakedPubX = bytesToHex(Array.from(Q.x));
+  const expectedSpk = '5120' + tweakedPubX;
+
+  for (let i = 0; i < utxos.length; i++) {
+    const actualSpk = (utxos[i].scriptPubKey || '').toLowerCase();
+    if (actualSpk && actualSpk !== expectedSpk) {
+      throw new Error(
+        `UTXO[${i}]: المفتاح الخاص لا يطابق الـ scriptPubKey!\n` +
+        `scriptPubKey المتوقع (من مفتاحك): ${expectedSpk}\n` +
+        `scriptPubKey الفعلي في الـ UTXO:  ${actualSpk}\n` +
+        `→ تأكد من صحة المفتاح الخاص أو من أن هذا UTXO يخصك فعلاً.`
+      );
+    }
+  }
+
+  const inCount     = utxos.length;
+  const witnesses   = [];
+
+  for (let i = 0; i < inCount; i++) {
+    const sighash = computeTaprootSighash(txHex, i, utxos);
+    const sig     = schnorrSign(sighash, tweakedPriv, new Array(32).fill(0));
+    witnesses.push([bytesToHex(sig)]); // 64-byte Schnorr, بدون SIGHASH_ALL لأن SIGHASH_DEFAULT
+  }
+
+  // Taproot inputs لا تحتاج scriptSig
+  return injectScriptSigs(txHex, Array(inCount).fill(''), 0, true, witnesses);
+}
+
+/* ============================================================
+   FETCH UTXOs
+   ============================================================ */
+async function fetchUTXOs() {
+  const addr = document.getElementById('queryAddr').value.trim();
+  if (!addr) { alert('أدخل عنواناً للمرسل للاستعلام'); return; }
+
+  const status  = document.getElementById('fetchStatus');
+  const list    = document.getElementById('utxoList');
+  const balInfo = document.getElementById('balanceInfo');
+
+  status.innerHTML = '<div class="fetch-indicator"><div class="fetch-dot"></div>جلب UTXOs من mempool.space...</div>';
+  list.innerHTML = ''; balInfo.innerHTML = '';
+  selectedUTXOs = [];
+
+  const btn = document.getElementById('fetchBtn');
+  btn.disabled = true;
+
+  try {
+    // Bech32 (SegWit/Taproot) case-insensitive — نحوّلها لـ lowercase فقط
+    // Base58Check (P2PKH / P2SH) حساسة للأحرف — نحتفظ بها كما هي
+    const isBech32 = addr.startsWith('bc1') || addr.startsWith('tb1') || addr.startsWith('BC1') || addr.startsWith('TB1');
+    const cleanAddr = isBech32 ? addr.toLowerCase() : addr;
+    const r = await fetch(`${API[getNet()]}/address/${cleanAddr}/utxo`);
+    
+    if (!r.ok) {
+        if (r.status === 400) throw new Error(`HTTP 400 — عنوان غير صالح أو غير متوافق. تأكد من أنك اخترت الشبكة الصحيحة (Testnet/Mainnet) التي تطابق العنوان.`);
+        throw new Error(`HTTP ${r.status} — ${r.statusText}`);
+    }
+    
+    const utxos = await r.json();
+    status.innerHTML = '';
+
+    if (!utxos.length) {
+      list.innerHTML = '<div class="info-box" style="background:var(--warn-bg);color:var(--warn);border:1.5px solid rgba(212,165,116,0.3)">لا توجد UTXOs غير مُنفَقة لهذا العنوان.</div>';
+    } else {
+      // جلب scriptPubKey الفعلي لكل UTXO من البلوكتشين
+      status.innerHTML = '<div class="fetch-indicator"><div class="fetch-dot"></div>جلب scriptPubKey لكل UTXO...</div>';
+      for (const u of utxos) {
+        try {
+          const txRes  = await fetch(`${API[getNet()]}/tx/${u.txid}`);
+          const txData = await txRes.json();
+          u.scriptPubKey = txData.vout[u.vout].scriptpubkey;
+        } catch (_) {
+          u.scriptPubKey = null; // fallback: سيتم الحساب من العنوان
+        }
+      }
+      status.innerHTML = '';
+
+      let total = 0;
+      utxos.forEach((u, i) => {
+        total += u.value;
+        const card = document.createElement('div');
+        card.className = 'utxo-card';
+        card.id = 'utxo-' + i;
+        card.innerHTML = `<div class="utxo-card-row">
+          <div style="flex:1;min-width:0">
+            <div class="utxo-txid">${u.txid.slice(0,22)}...${u.txid.slice(-10)}:${u.vout}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:3px">
+              ${u.status.confirmed ? '✓ مؤكد — Block ' + u.status.block_height : '⏳ في الـ Mempool (غير مؤكد)'}
+              ${u.scriptPubKey ? ' · <span style="color:var(--success)">✓ scriptPubKey</span>' : ' · <span style="color:var(--warn)">⚠ scriptPubKey غير متاح</span>'}
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
+            <div class="utxo-val" style="text-align:right">
+              ${(u.value / 1e8).toFixed(8)} BTC<br>
+              <span style="font-size:10px;color:var(--text2)">${u.value.toLocaleString()} sat</span>
+            </div>
+            <div class="utxo-toggle-wrap" onclick="event.stopPropagation();toggleUTXO(utxoRef_${i}, ${i})">
+              <div class="utxo-toggle-label" id="utxo-lbl-${i}">للإنفاق</div>
+              <div class="utxo-toggle-track" id="utxo-trk-${i}">
+                <div class="utxo-toggle-knob"></div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+        window['utxoRef_' + i] = u;
+        card.onclick = () => toggleUTXO(u, i);
+        list.appendChild(card);
+      });
+
+      balInfo.innerHTML = `<div class="info-box teal" style="margin-top:8px">
+        إجمالي الرصيد: <strong>${(total / 1e8).toFixed(8)} BTC</strong>
+        (${total.toLocaleString()} sat) · ${utxos.length} UTXO متاح
+        <br><span style="font-size:10px;margin-top:2px;display:block">انقر على UTXO لاختياره للإنفاق (يمكن اختيار أكثر من واحد)</span>
+      </div>`;
+    }
+  } catch (e) {
+    status.innerHTML = `<div class="info-box danger">خطأ في جلب البيانات: ${e.message}</div>`;
+  }
+
+  btn.disabled = false;
+}
+
+function toggleUTXO(utxo, idx) {
+  const card  = document.getElementById('utxo-' + idx);
+  const track = document.getElementById('utxo-trk-' + idx);
+  const lbl   = document.getElementById('utxo-lbl-' + idx);
+  const pos   = selectedUTXOs.findIndex(u => u.txid === utxo.txid && u.vout === utxo.vout);
+  if (pos >= 0) {
+    selectedUTXOs.splice(pos, 1);
+    card.classList.remove('selected');
+    if (track) track.classList.remove('on');
+    if (lbl)   lbl.style.color = '';
+  } else {
+    selectedUTXOs.push(utxo);
+    card.classList.add('selected');
+    if (track) track.classList.add('on');
+    if (lbl)   lbl.style.color = 'var(--accent)';
+  }
+  updateFeeHint();
+}
+
+/* ============================================================
+   BUILD TRANSACTION
+   ============================================================ */
+function buildTx() {
+  const br     = document.getElementById('buildResult');
+  const dest   = document.getElementById('destAddr').value.trim();
+  const amount = parseInt(document.getElementById('sendAmount').value);
+  const change = document.getElementById('changeAddr').value.trim();
+  const seqH   = document.getElementById('seqHex').value.trim() || 'ffffffff';
+
+  if (!dest)           return br.innerHTML = '<div class="info-box danger">أدخل عنوان الوجهة.</div>';
+  if (!amount || amount <= 0) return br.innerHTML = '<div class="info-box danger">أدخل مبلغاً صحيحاً بالـ Satoshi.</div>';
+  if (!selectedUTXOs.length)  return br.innerHTML = '<div class="info-box danger">اختر UTXO واحداً على الأقل من القائمة.</div>';
+
+  const totalIn = selectedUTXOs.reduce((s, u) => s + u.value, 0);
+  const feeRate = parseInt(document.getElementById('feeRate').value) || 1000;
+  const fee     = feeRate; // direct satoshi fee
+  const chgAmt  = totalIn - amount - fee;
+
+  try {
+    const rawTx = buildRawTx(selectedUTXOs, dest, amount, change, chgAmt, seqH);
+
+    br.innerHTML = `
+      <div style="margin-top:14px">
+        <div class="stat-row">
+          <div class="stat-pill">المُدخلات <strong>${selectedUTXOs.length}</strong></div>
+          <div class="stat-pill">إجمالي الإدخال <strong>${totalIn.toLocaleString()} sat</strong></div>
+          <div class="stat-pill">الرسوم ~<strong>${fee.toLocaleString()} sat</strong></div>
+          <div class="stat-pill">الباقي <strong>${chgAmt > 0 ? chgAmt.toLocaleString() : 0} sat</strong></div>
+          <div class="stat-pill">${seqH === 'fffffffd' ? '🔁 <strong style="color:var(--accent)">RBF مفعّل</strong>' : '🔒 <strong>RBF معطَّل</strong>'}</div>
+        </div>
+        <div class="result-panel">
+          <div class="result-head">
+            Raw TX Hex (غير موقَّعة)
+            <button class="copy-btn" onclick="copyText('${rawTx}',this)">نسخ</button>
+          </div>
+          <div class="result-body"><div class="mono-block">${rawTx}</div></div>
+        </div>
+        <div class="info-box teal">تم بناء المعاملة. انتقل إلى تبويب "التوقيع والإرسال" لتوقيعها وبثّها.</div>
+      </div>`;
+
+    document.getElementById('unsignedTx').value = rawTx;
+  } catch (e) {
+    br.innerHTML = `<div class="info-box danger">خطأ في البناء: ${e.message}</div>`;
+    console.error(e);
+  }
+}
+
+function buildRawTx(utxos, destAddr, amount, changeAddr, changeAmt, seqHex) {
+  let tx = '02000000';
+  tx += varInt(utxos.length);
+  // Convert seqHex (big-endian user input like 'ffffffff') to proper LE uint32
+  const seqVal = parseInt(seqHex, 16) >>> 0;
+  const seqLE  = uint32LE(seqVal);
+  for (const u of utxos) {
+    tx += reverseHex(u.txid);
+    tx += uint32LE(u.vout);
+    tx += '00';
+    tx += seqLE;
+  }
+  const outputs = [{ addr: destAddr, value: amount }];
+  if (changeAddr && changeAmt > 546) outputs.push({ addr: changeAddr, value: changeAmt });
+  
+  // إضافة OP_RETURN إذا كان هناك رسالة
+  const opReturnMsg = document.getElementById('opReturnMsg').value.trim();
+  if (opReturnMsg) {
+    const msgBytes = new TextEncoder().encode(opReturnMsg);
+    const msgHex = bytesToHex(Array.from(msgBytes));
+    const msgLen = msgBytes.length;
+    if (msgLen <= 80) {
+      // OP_RETURN format: OP_RETURN <length> <data>
+      const opReturnScript = '6a' + (msgLen < 76 ? msgLen.toString(16).padStart(2, '0') : '4c' + msgLen.toString(16).padStart(2, '0')) + msgHex;
+      outputs.push({ script: opReturnScript, value: 0 });
+    }
+  }
+  
+  tx += varInt(outputs.length);
+  for (const out of outputs) {
+    tx += uint64LE(out.value);
+    if (out.script) {
+      // OP_RETURN output
+      tx += varInt(out.script.length / 2) + out.script;
+    } else {
+      const spk = addressToScriptPK(out.addr);
+      tx += varInt(spk.length / 2) + spk;
+    }
+  }
+  tx += uint32LE(0); // nLockTime = 0
+  return tx;
+}
+
+/* ============================================================
+   SIGN TRANSACTION
+   ============================================================ */
+async function signTx() {
+  const sr         = document.getElementById('signResult');
+  const privKeyRaw = document.getElementById('privKey').value.trim();
+  const unsignedH  = document.getElementById('unsignedTx').value.trim();
+  const senderAddr = document.getElementById('queryAddr').value.trim();
+
+  if (!privKeyRaw || !unsignedH) return sr.innerHTML = '<div class="info-box danger">أدخل المفتاح الخاص والمعاملة غير الموقَّعة.</div>';
+  if (!senderAddr) return sr.innerHTML = '<div class="info-box danger">تأكد من إدخال عنوان المرسل في تبويب "بناء المعاملة" لمعرفة نوع العنوان.</div>';
+
+  sr.innerHTML = '<div class="fetch-indicator"><div class="fetch-dot"></div>جارٍ التوقيع...</div>';
+  document.getElementById('signBtn').disabled = true;
+
+  try {
+    await new Promise(r => setTimeout(r, 60));
+    const { bytes: privBytes, compressed } = parsePrivKey(privKeyRaw);
+    const pubKey    = getPublicKey(privBytes, compressed);
+    const pubKeyHex = bytesToHex(pubKey);
+    const pkh       = hash160(pubKeyHex);
+
+    // === DIAGNOSTICS: عرض معلومات التشخيص ===
+    let diagHtml = `<div class="result-panel" style="margin-top:10px">
+      <div class="result-head">🔍 تشخيص — بيانات التوقيع</div>
+      <div class="result-body" style="font-family:var(--mono);font-size:11px;line-height:1.8">
+        <b>Public Key:</b> ${pubKeyHex}<br>
+        <b>PKH (hash160):</b> ${pkh}<br>
+        <b>UTXOs المختارة: ${selectedUTXOs.length}</b><br>`;
+
+    selectedUTXOs.forEach((u, i) => {
+      const spk = u.scriptPubKey || '(غير متاح — fallback من العنوان)';
+      diagHtml += `<br><b>UTXO[${i}]</b> ${u.txid.slice(0,12)}...:${u.vout}<br>
+        &nbsp;&nbsp;scriptPubKey: <span style="color:var(--accent)">${spk}</span><br>
+        &nbsp;&nbsp;value: ${u.value} sat<br>`;
+      // تحليل نوع الـ script
+      if (spk && spk.startsWith('76a914') && spk.endsWith('88ac')) {
+        const spkPKH = spk.slice(6, 46);
+        const match  = spkPKH === pkh ? '✅ مطابق' : `❌ غير مطابق (PKH في script: ${spkPKH})`;
+        diagHtml += `&nbsp;&nbsp;النوع: P2PKH — PKH match: ${match}<br>`;
+      } else if (spk && spk.startsWith('a914') && spk.endsWith('87')) {
+        diagHtml += `&nbsp;&nbsp;النوع: <b style="color:var(--warn)">P2SH / P2SH-P2WPKH</b> — سيُستخدم redeemScript تلقائياً<br>`;
+      } else if (spk && spk.startsWith('0014')) {
+        diagHtml += `&nbsp;&nbsp;النوع: P2WPKH (native SegWit)<br>`;
+      } else if (spk && spk.startsWith('5120')) {
+        diagHtml += `&nbsp;&nbsp;النوع: <b style="color:var(--teal)">P2TR — Taproot (key path)</b> — توقيع Schnorr BIP340<br>`;
+      } else {
+        diagHtml += `&nbsp;&nbsp;النوع: <b style="color:var(--danger)">غير معروف / CLTV / custom</b><br>`;
+      }
+    });
+    diagHtml += `</div></div>`;
+
+    const type = detectScriptType(senderAddr);
+    if (!type) throw new Error('نوع العنوان غير مدعوم أو مجهول (يجب أن يكون P2PKH أو P2WPKH أو P2SH-P2WPKH أو Taproot).');
+
+    // ── تحقق من تطابق نوع UTXO مع نوع العنوان ──
+    const expectedSPKPrefix = {
+      'p2pkh':       ['76a914'],
+      'p2wpkh':      ['0014'],
+      'p2sh-p2wpkh': ['a914'],
+      'p2tr':        ['5120']
+    }[type];
+    for (let i = 0; i < selectedUTXOs.length; i++) {
+      const spk = selectedUTXOs[i].scriptPubKey;
+      if (spk && !expectedSPKPrefix.some(p => spk.startsWith(p))) {
+        throw new Error(
+          `تعارض: UTXO[${i}] يحتوي scriptPubKey من نوع مختلف عن العنوان المُدخَل!\n` +
+          `scriptPubKey الفعلي: ${spk}\n` +
+          `المتوقع لعنوان ${type}: يبدأ بـ ${expectedSPKPrefix.join(' أو ')}\n` +
+          `→ تأكد من إدخال عنوان المُرسِل الصحيح الذي يملك هذه الـ UTXOs.`
+        );
+      }
+    }
+
+    const customRS = (document.getElementById('redeemScriptInput') || {}).value;
+    const redeemScriptOverride = (customRS || '').trim() || null;
+    const customTweakRaw = (document.getElementById('taprootTweakInput') || {}).value;
+    const customTweakHex = (customTweakRaw || '').trim() || null;
+
+    const signed = type === 'p2pkh'
+      ? signP2PKH(unsignedH, privBytes, pubKey, senderAddr, selectedUTXOs)
+      : type === 'p2wpkh'
+        ? signP2WPKH(unsignedH, privBytes, pubKey)
+        : type === 'p2sh-p2wpkh'
+          ? signP2SH_P2WPKH(unsignedH, privBytes, pubKey, redeemScriptOverride)
+          : signP2TR(unsignedH, privBytes, selectedUTXOs, customTweakHex);
+
+    signedHex = signed;
+    sr.innerHTML = '<div class="info-box teal" style="margin-top:12px">✓ تم التوقيع بنجاح!</div>';
+    document.getElementById('broadcastSection').style.display = '';
+    showSignedTx(signed, pubKey);
+    updateBroadcastLinks();
+  } catch (e) {
+    sr.innerHTML = `<div class="info-box danger">خطأ في التوقيع: ${e.message}</div>`;
+    console.error(e);
+  }
+
+  document.getElementById('signBtn').disabled = false;
+}
+
+/* ============================================================
+   VERIFY KEY → ADDRESS MATCH
+   ============================================================ */
+function pubKeyToAddress(pubKeyHex, network) {
+  const pkh    = hash160(pubKeyHex);
+  const prefix = (network === 'mainnet') ? '00' : '6f'; // testnet3 و testnet4 كلاهما يستخدمان 6f
+  const payload = prefix + pkh;
+  // double-SHA256 checksum
+  const checksum = hash256(payload).slice(0, 8);
+  const full = payload + checksum;
+  // base58 encode
+  const bytes = hexToBytes(full);
+  let num = 0n;
+  for (const b of bytes) num = num * 256n + BigInt(b);
+  let result = '';
+  while (num > 0n) { result = B58[Number(num % 58n)] + result; num /= 58n; }
+  // leading zeros
+  for (let i = 0; i < bytes.length && bytes[i] === 0; i++) result = '1' + result;
+  return result;
+}
+
+function verifyKey() {
+  const vr = document.getElementById('keyVerifyResult');
+  const privKeyRaw = document.getElementById('privKey').value.trim();
+  const senderAddr = document.getElementById('queryAddr').value.trim();
+  if (!privKeyRaw) return vr.innerHTML = '<div class="info-box danger">أدخل المفتاح الخاص أولاً.</div>';
+  try {
+    const { bytes: privBytes, compressed } = parsePrivKey(privKeyRaw);
+    const pubKey     = getPublicKey(privBytes, compressed);
+    const pubKeyHex  = bytesToHex(pubKey);
+    const net        = getNet();
+    const addrType   = detectScriptType(senderAddr);
+
+    // اشتقاق جميع أنواع العناوين من المفتاح الخاص
+    const p2pkhAddr   = pubKeyToAddress(pubKeyHex, net);
+    const pkh         = hash160(pubKeyHex);
+    const p2wpkhSPK   = '0014' + pkh;
+    const p2shRS      = '0014' + pkh;
+    const p2shHash    = hash160(p2shRS);
+    const p2shPrefix  = net === 'mainnet' ? '05' : 'c4';
+    const p2shPayload = p2shPrefix + p2shHash;
+    const p2shCheck   = hash256(p2shPayload).slice(0, 8);
+    const p2shFull    = hexToBytes(p2shPayload + p2shCheck);
+    let p2shNum = 0n;
+    for (const b of p2shFull) p2shNum = p2shNum * 256n + BigInt(b);
+    let p2shAddr = '';
+    while (p2shNum > 0n) { p2shAddr = B58[Number(p2shNum % 58n)] + p2shAddr; p2shNum /= 58n; }
+    for (let i = 0; i < p2shFull.length && p2shFull[i] === 0; i++) p2shAddr = '1' + p2shAddr;
+
+    // Taproot: tweak المفتاح وإنشاء عنوان P2TR
+    let taprootAddr = '(غير مدعوم)';
+    try {
+      const secp = getSecp256k1();
+      const d0 = secp.toBig(privBytes);
+      const P  = secp.pointMultiply(secp.G, d0);
+      const d  = (secp.toBig(P.y) & 1n) === 0n ? d0 : secp.N - d0;
+      const Px = Array.from(P.x);
+      const tweak = secp.toBig(taggedHash('TapTweak', Px));
+      const tweakedD = (d + tweak) % secp.N;
+      const Q = secp.pointMultiply(secp.G, tweakedD);
+      const Qx = bytesToHex(Array.from(Q.x));
+      // bech32m encode for Taproot
+      const hrp = net === 'mainnet' ? 'bc' : 'tb';
+      taprootAddr = encodeBech32m(hrp, 1, hexToBytes(Qx));
+    } catch(_) {}
+
+    const derivedAddrs = {
+      'P2PKH':       p2pkhAddr,
+      'P2WPKH':      `${net === 'mainnet' ? 'bc1q' : 'tb1q'}... (PKH: ${pkh.slice(0,16)}...)`,
+      'P2SH-P2WPKH': p2shAddr,
+      'Taproot P2TR': taprootAddr
+    };
+
+    let match = false;
+    let matchType = '';
+    if (senderAddr) {
+      if (addrType === 'p2pkh'       && senderAddr === p2pkhAddr)  { match = true; matchType = 'P2PKH'; }
+      if (addrType === 'p2sh-p2wpkh' && senderAddr === p2shAddr)   { match = true; matchType = 'P2SH-P2WPKH'; }
+      if (addrType === 'p2wpkh') {
+        // تحقق من أن PKH في العنوان يطابق hash160(pubkey)
+        try {
+          const decoded = bech32Decode(senderAddr);
+          if (bytesToHex(decoded) === pkh) { match = true; matchType = 'P2WPKH'; }
+        } catch(_) {}
+      }
+      if (addrType === 'p2tr' && senderAddr === taprootAddr) { match = true; matchType = 'Taproot'; }
+    }
+
+    vr.innerHTML = `<div class="result-panel" style="margin-bottom:8px">
+      <div class="result-head">نتيجة التحقق — جميع أنواع العناوين</div>
+      <div class="result-body" style="font-family:var(--mono);font-size:11px;line-height:1.9">
+        <b>Public Key:</b> ${pubKeyHex}<br>
+        <b>PKH (hash160):</b> ${pkh}<br>
+        <hr style="border:none;border-top:1px solid var(--border);margin:8px 0"/>
+        <b>P2PKH (1.../m.../n...):</b> <span style="color:var(--accent)">${p2pkhAddr}</span><br>
+        <b>P2SH-P2WPKH (3.../2...):</b> <span style="color:var(--accent)">${p2shAddr}</span><br>
+        <b>P2WPKH (bc1q/tb1q):</b> pkh = <span style="color:var(--accent)">${pkh}</span><br>
+        <b>Taproot P2TR (bc1p/tb1p):</b> <span style="color:var(--accent)">${taprootAddr}</span><br>
+        <hr style="border:none;border-top:1px solid var(--border);margin:8px 0"/>
+        <b>العنوان المُدخَل:</b> <span style="color:var(--text2)">${senderAddr || '(فارغ)'}</span><br>
+        <b>النتيجة:</b> ${match
+          ? `<span style="color:var(--success)">✅ المفتاح يطابق العنوان (${matchType})</span>`
+          : '<span style="color:var(--danger)">❌ المفتاح لا يطابق العنوان — تحقق من المفتاح الخاص أو نوع العنوان</span>'}
+      </div>
+    </div>`;
+  } catch(e) {
+    vr.innerHTML = `<div class="info-box danger">خطأ: ${e.message}</div>`;
+  }
+}
+
+// ── مساعد: bech32m encode لعناوين Taproot ──
+function encodeBech32m(hrp, witnessVersion, data) {
+  const CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
+  const BECH32M_CONST = 0x2bc830a3;
+  function polymod(values) {
+    const GEN = [0x3b6a57b2,0x26508e6d,0x1ea119fa,0x3d4233dd,0x2a1462b3];
+    let chk = 1;
+    for (const v of values) {
+      const b = chk >> 25;
+      chk = ((chk & 0x1ffffff) << 5) ^ v;
+      for (let i = 0; i < 5; i++) if ((b >> i) & 1) chk ^= GEN[i];
+    }
+    return chk;
+  }
+  function hrpExpand(h) {
+    const r = [];
+    for (const c of h) r.push(c.charCodeAt(0) >> 5);
+    r.push(0);
+    for (const c of h) r.push(c.charCodeAt(0) & 31);
+    return r;
+  }
+  function convertBitsEnc(src, fromW, toW) {
+    let acc = 0, bits = 0;
+    const ret = [];
+    const maxv = (1 << toW) - 1;
+    for (const v of src) { acc = (acc << fromW) | v; bits += fromW; while (bits >= toW) { bits -= toW; ret.push((acc >> bits) & maxv); } }
+    if (bits > 0) ret.push((acc << (toW - bits)) & maxv);
+    return ret;
+  }
+  const enc5 = [witnessVersion, ...convertBitsEnc(data, 8, 5)];
+  const checkValues = [...hrpExpand(hrp), ...enc5, 0, 0, 0, 0, 0, 0];
+  const mod = polymod(checkValues) ^ BECH32M_CONST;
+  const checksum = [];
+  for (let i = 5; i >= 0; i--) checksum.push((mod >> (i * 5)) & 31);
+  return hrp + '1' + [...enc5, ...checksum].map(v => CHARSET[v]).join('');
+}
+
+function parsePrivKey(key) {
+  key = key.trim();
+  if (/^[0-9a-fA-F]{64}$/.test(key)) return { bytes: hexToBytes(key), compressed: true };
+  const decoded = base58checkDecode(key);
+  if (decoded[0] === 0x80 || decoded[0] === 0xef) {
+    // WIF compressed: prefix(1) + privkey(32) + 0x01(1) + checksum(4) = 38 bytes decoded
+    // WIF uncompressed: prefix(1) + privkey(32) + checksum(4) = 37 bytes decoded
+    const compressed = decoded.length >= 38 && decoded[33] === 0x01;
+    return { bytes: decoded.slice(1, 33), compressed };
+  }
+  throw new Error('صيغة مفتاح غير مدعومة. استخدم WIF أو hex 64 حرف.');
+}
+
+function getPublicKey(privBytes, compressed) {
+  const s     = getSecp256k1();
+  const point = s.pointMultiply(s.G, privBytes);
+  if (compressed) {
+    const prefix = (point.y[31] & 1) ? '03' : '02';
+    return hexToBytes(prefix + bytesToHex(point.x));
+  } else {
+    // Uncompressed: 04 + x(32) + y(32)
+    return hexToBytes('04' + bytesToHex(point.x) + bytesToHex(point.y));
+  }
+}
+function getSecp256k1() {
+  const P = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2Fn;
+  const N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141n;
+  const G = {
+    x: hexToBytes('79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798'),
+    y: hexToBytes('483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8')
+  };
+
+  function toBig(b) { return BigInt('0x' + bytesToHex(b)); }
+  function fromBig(n, len = 32) { return hexToBytes(n.toString(16).padStart(len * 2, '0')); }
+  function modP(n) { return ((n % P) + P) % P; }
+  function modN(n) { return ((n % N) + N) % N; }
+
+  function inv(n, m) {
+    let [a, b, x, y] = [n, m, 1n, 0n];
+    while (b > 0n) {
+      const q = a / b;
+      [a, b] = [b, a - q * b];
+      [x, y] = [y, x - q * y];
+    }
+    return ((x % m) + m) % m;
+  }
+
+  function pointAdd(p1, p2) {
+    if (!p1) return p2;
+    if (!p2) return p1;
+    const x1 = toBig(p1.x), y1 = toBig(p1.y);
+    const x2 = toBig(p2.x), y2 = toBig(p2.y);
+    if (x1 === x2 && y1 === y2) {
+      const lam = modP(3n * x1 * x1 * inv(modP(2n * y1), P));
+      const x3  = modP(lam * lam - 2n * x1);
+      return { x: fromBig(x3), y: fromBig(modP(lam * modP(x1 - x3) - y1)) };
+    }
+    const lam = modP(modP(y2 - y1) * inv(modP(x2 - x1), P));
+    const x3  = modP(lam * lam - x1 - x2);
+    return { x: fromBig(x3), y: fromBig(modP(lam * modP(x1 - x3) - y1)) };
+  }
+
+  function pointMultiply(pt, k) {
+    const kb = typeof k === 'bigint' ? k : toBig(k instanceof Array ? k : hexToBytes(k));
+    let res = null, cur = pt, n = kb;
+    while (n > 0n) { if (n & 1n) res = pointAdd(res, cur); cur = pointAdd(cur, cur); n >>= 1n; }
+    return res;
+  }
+
+  return { G, N, P, pointMultiply, toBig, fromBig, modN, inv };
+}
+
+/* ============================================================
+   secp256k1 ARITHMETIC
+   ============================================================ */
+function ecdsaSign(msgHash, privBytes) {
+  const secp = getSecp256k1();
+  const z    = secp.toBig(msgHash);
+  const d    = secp.toBig(privBytes);
+
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const kBytes = deterministicK(msgHash, privBytes, attempt);
+    const k = BigInt('0x' + bytesToHex(kBytes));
+    if (k === 0n || k >= secp.N) continue;
+    const R = secp.pointMultiply(secp.G, k);
+    if (!R) continue;
+    const r = secp.modN(secp.toBig(R.x));
+    if (r === 0n) continue;
+    let s = secp.modN(secp.inv(k, secp.N) * secp.modN(z + r * d));
+    if (s === 0n) continue;
+    if (s > secp.N / 2n) s = secp.N - s;
+    return {
+      r: hexToBytes(r.toString(16).padStart(64, '0')),
+      s: hexToBytes(s.toString(16).padStart(64, '0'))
+    };
+  }
+  throw new Error('فشل توليد توقيع صالح');
+}
+
+function deterministicK(msgHash, privBytes, attempt) {
+  const toHex = (arr) => bytesToHex(arr);
+  const hmac = (keyArr, dataArr) => {
+    const keyWA  = CryptoJS.enc.Hex.parse(toHex(keyArr));
+    const dataWA = CryptoJS.enc.Hex.parse(toHex(dataArr));
+    return hexToBytes(CryptoJS.HmacSHA256(dataWA, keyWA).toString(CryptoJS.enc.Hex));
+  };
+  const concat = (...arrs) => { const r = []; for (const a of arrs) r.push(...a); return r; };
+
+  let v  = new Array(32).fill(0x01);
+  let kk = new Array(32).fill(0x00);
+
+  kk = hmac(kk, concat(v, [0x00], privBytes, msgHash));
+  v  = hmac(kk, v);
+  kk = hmac(kk, concat(v, [0x01], privBytes, msgHash));
+  v  = hmac(kk, v);
+
+  for (let i = 0; i < attempt; i++) {
+    kk = hmac(kk, concat(v, [0x00]));
+    v  = hmac(kk, v);
+    kk = hmac(kk, concat(v, [0x01], privBytes, msgHash));
+    v  = hmac(kk, v);
+  }
+  v = hmac(kk, v);
+  return v;
+}
+
+function toDER(sig) {
+  let r = [...sig.r];
+  let s = [...sig.s];
+  while (r.length > 1 && r[0] === 0) r = r.slice(1);
+  while (s.length > 1 && s[0] === 0) s = s.slice(1);
+  if (r[0] & 0x80) r = [0x00, ...r];
+  if (s[0] & 0x80) s = [0x00, ...s];
+  const inner = [0x02, r.length, ...r, 0x02, s.length, ...s];
+  return bytesToHex([0x30, inner.length, ...inner]);
+}
+
+/* ============================================================
+   SIGHASH LEGACY (P2PKH)
+   ============================================================ */
+function computeSighashLegacy(txHex, inputIdx, scriptCodeHex) {
+  const txBytes = hexToBytes(txHex);
+  let offset    = 4;
+  const inCount = txBytes[offset++];
+  const inputs  = [];
+
+  for (let i = 0; i < inCount; i++) {
+    const txid    = txBytes.slice(offset, offset + 32); offset += 32;
+    const vout    = readUint32LE(txBytes, offset); offset += 4;
+    const sl      = txBytes[offset++];
+    const script  = txBytes.slice(offset, offset + sl); offset += sl;
+    const seq     = txBytes.slice(offset, offset + 4); offset += 4;
+    inputs.push({ txid, vout, script, seq });
+  }
+
+  const outCount = txBytes[offset++];
+  const outputs  = [];
+  for (let i = 0; i < outCount; i++) {
+    const value  = txBytes.slice(offset, offset + 8); offset += 8;
+    const sl     = txBytes[offset++];
+    const script = txBytes.slice(offset, offset + sl); offset += sl;
+    outputs.push({ value, script });
+  }
+
+  const locktime = txBytes.slice(offset, offset + 4);
+  const sc       = hexToBytes(scriptCodeHex);
+  // version (4 bytes LE) + inCount as separate items
+  let   ser      = [2, 0, 0, 0];
+  ser.push(inCount);
+
+  for (let i = 0; i < inCount; i++) {
+    ser.push(...inputs[i].txid, ...uint32LEBytes(inputs[i].vout));
+    if (i === inputIdx) {
+      ser.push(...varIntBytes(sc.length), ...sc);
+    } else {
+      ser.push(0);
+    }
+    ser.push(...inputs[i].seq);
+  }
+
+  ser.push(outCount);
+  for (const o of outputs) {
+    ser.push(...o.value, ...varIntBytes(o.script.length), ...o.script);
+  }
+  ser.push(...locktime, 1, 0, 0, 0); // SIGHASH_ALL
+  return hexToBytes(hash256(bytesToHex(ser)));
+}
+
+/* ============================================================
+   SIGHASH BIP143 (P2WPKH)
+   ============================================================ */
+function computeSegwitSighash(txHex, inputIdx, amount, scriptCodeHex, locktime) {
+  const txBytes  = hexToBytes(txHex);
+  let offset     = 4;
+  const inCount  = txBytes[offset++];
+  const inputs   = [];
+
+  for (let i = 0; i < inCount; i++) {
+    const txid = txBytes.slice(offset, offset + 32); offset += 32;
+    const vout = readUint32LE(txBytes, offset); offset += 4;
+    const sl   = txBytes[offset++]; offset += sl;
+    const seq  = txBytes.slice(offset, offset + 4); offset += 4;
+    inputs.push({ txid, vout, seq });
+  }
+
+  const outCount = txBytes[offset++];
+  const outputs  = [];
+  for (let i = 0; i < outCount; i++) {
+    const value  = txBytes.slice(offset, offset + 8); offset += 8;
+    const sl     = txBytes[offset++];
+    const script = txBytes.slice(offset, offset + sl); offset += sl;
+    outputs.push({ value, script });
+  }
+
+  const locktimeBytes = txBytes.slice(offset, offset + 4);
+
+  let ser = [];
+  for (const inp of inputs) ser.push(...inp.txid, ...uint32LEBytes(inp.vout));
+  const hashPrevouts = hexToBytes(hash256(bytesToHex(ser)));
+
+  ser = [];
+  for (const inp of inputs) ser.push(...inp.seq);
+  const hashSeq = hexToBytes(hash256(bytesToHex(ser)));
+
+  ser = [];
+  for (const o of outputs) ser.push(...o.value, ...varIntBytes(o.script.length), ...o.script);
+  const hashOutputs = hexToBytes(hash256(bytesToHex(ser)));
+
+  const sc       = hexToBytes(scriptCodeHex);
+  let preimage   = [2, 0, 0, 0];
+  preimage.push(...hashPrevouts, ...hashSeq);
+  preimage.push(...inputs[inputIdx].txid, ...uint32LEBytes(inputs[inputIdx].vout));
+  preimage.push(...varIntBytes(sc.length), ...sc);
+  preimage.push(...uint64LEBytes(amount));
+  preimage.push(...inputs[inputIdx].seq);
+  preimage.push(...hashOutputs);
+  preimage.push(...locktimeBytes);
+  preimage.push(1, 0, 0, 0); // SIGHASH_ALL
+
+  return hexToBytes(hash256(bytesToHex(preimage)));
+}
+
+/* ============================================================
+   SIGN P2PKH
+   ============================================================ */
+function signP2PKH(txHex, privBytes, pubKey, senderAddr, utxos) {
+  const txBytes = hexToBytes(txHex);
+  const inCount = txBytes[4];
+  const scriptSigs = [];
+  const pubKeyHex = bytesToHex(pubKey);
+  const pkh = hash160(pubKeyHex);
+  // Fallback: حساب scriptCode من العنوان إذا لم يكن هناك scriptPubKey في الـ UTXO
+  const fallbackScriptCode = addressToScriptPK(senderAddr);
+
+  // ── فحص مسبق: هل أي UTXO من نوع P2SH-P2WPKH؟ ──
+  // إذا كان العنوان P2PKH لكن الـ UTXO يحتوي P2SH script → خطأ في الإدخال
+  for (let i = 0; i < inCount; i++) {
+    const utxo = utxos && utxos[i];
+    const spk  = utxo && utxo.scriptPubKey ? utxo.scriptPubKey : fallbackScriptCode;
+    if (spk.startsWith('a914') && spk.endsWith('87')) {
+      // هذا UTXO هو P2SH وليس P2PKH — يجب التوقيع بـ P2SH-P2WPKH
+      // نُعيد التوجيه تلقائياً بدلاً من التوقيع الخاطئ
+      throw new Error(
+        `UTXO[${i}] من نوع P2SH (a914...87) لكن العنوان المُدخَل P2PKH.\n` +
+        `تأكد من اختيار النوع الصحيح: إذا كان عنوانك يبدأ بـ 2 أو 3 فاختر P2SH-SegWit.\n` +
+        `scriptPubKey في الـ UTXO: ${spk}`
+      );
+    }
+    if (spk.startsWith('0014') || spk.startsWith('5120')) {
+      throw new Error(
+        `UTXO[${i}] من نوع SegWit/Taproot لكن العنوان المُدخَل P2PKH.\n` +
+        `تأكد من إدخال عنوان المُرسِل الصحيح (bc1q/tb1q للـ SegWit أو bc1p/tb1p للـ Taproot).\n` +
+        `scriptPubKey في الـ UTXO: ${spk}`
+      );
+    }
+  }
+
+  for (let i = 0; i < inCount; i++) {
+    const utxo = utxos && utxos[i];
+    const spk  = utxo && utxo.scriptPubKey ? utxo.scriptPubKey : fallbackScriptCode;
+
+    // === P2PKH عادي أو CLTV: نستخدم الـ scriptPubKey مباشرة ===
+    const scriptCode = spk;
+    const sighash = computeSighashLegacy(txHex, i, scriptCode);
+    const sig     = ecdsaSign(sighash, privBytes);
+    const sigDer  = toDER(sig) + '01';
+    const scriptSigHex = buildP2PKHScriptSig(sigDer, pubKeyHex);
+
+    scriptSigs.push(scriptSigHex);
+  }
+
+  return injectScriptSigs(txHex, scriptSigs, 0, false, null);
+}
+
+function buildP2PKHScriptSig(sigDerHex, pubKeyHex) {
+  const sig = hexToBytes(sigDerHex);
+  const pk  = hexToBytes(pubKeyHex);
+  const out = [];
+  
+  out.push(...varIntBytes(sig.length), ...sig);
+  out.push(...varIntBytes(pk.length), ...pk);
+  return bytesToHex(out);
+}
+
+/* ============================================================
+   SIGN P2SH-P2WPKH  (عناوين 2... / 3... )
+   BIP16 + BIP143: scriptSig = push(redeemScript), witness = [sig, pubkey]
+   redeemScript = OP_0 <hash160(pubkey)>  =  0014<pkh>
+   ============================================================ */
+function signP2SH_P2WPKH(txHex, privBytes, pubKey, customRedeemScript) {
+  const inCount   = selectedUTXOs.length;
+  const pubKeyHex = bytesToHex(pubKey);
+  const pkh       = hash160(pubKeyHex);
+
+  // ── تحقق من redeemScript المُدخَل أو اشتقاقه تلقائياً ──
+  let redeemScript;
+  if (customRedeemScript) {
+    const rs = customRedeemScript.toLowerCase().replace(/\s+/g, '');
+    if (!/^[0-9a-f]+$/.test(rs))
+      throw new Error('redeemScript غير صالح — يجب أن يكون hex فقط.');
+    if (!rs.startsWith('0014') || rs.length !== 44)
+      throw new Error('redeemScript يجب أن يبدأ بـ 0014 ويتكون من 22 بايت (44 حرف hex) — مثال: 0014{20 بايت}.');
+    redeemScript = rs;
+  } else {
+    redeemScript = '0014' + pkh; // OP_0 <hash160(pubkey)>
+  }
+
+  // ── تحقق من أن hash160(redeemScript) يطابق الـ scriptPubKey الفعلي ──
+  const rsHash = hash160(redeemScript);
+  for (let i = 0; i < inCount; i++) {
+    const spk = selectedUTXOs[i].scriptPubKey;
+    if (spk && spk.startsWith('a914') && spk.endsWith('87')) {
+      const spkHash = spk.slice(4, 44); // 20 بايت بعد a914 وقبل 87
+      if (spkHash !== rsHash) {
+        throw new Error(
+          `UTXO[${i}]: redeemScript لا يطابق الـ scriptPubKey!\n` +
+          `hash160(redeemScript) المحسوب: ${rsHash}\n` +
+          `hash المطلوب في scriptPubKey:  ${spkHash}\n` +
+          `→ إما أن المفتاح الخاص خاطئ، أو أدخل redeemScript الصحيح يدوياً.`
+        );
+      }
+    }
+  }
+
+  // scriptCode لـ BIP143: P2PKH مكافئ لـ hash الموجود في redeemScript
+  const rsPKH      = redeemScript.slice(4); // 20 بايت بعد 0014
+  const scriptCode = '76a914' + rsPKH + '88ac';
+
+  const witnesses  = [];
+  const scriptSigs = [];
+
+  for (let i = 0; i < inCount; i++) {
+    const amount  = selectedUTXOs[i].value;
+    const sighash = computeSegwitSighash(txHex, i, amount, scriptCode, 0);
+    const sig     = ecdsaSign(sighash, privBytes);
+    const sigDer  = toDER(sig) + '01'; // SIGHASH_ALL
+
+    witnesses.push([sigDer, pubKeyHex]);
+
+    // scriptSig = <push redeemScript>
+    const rsBytes  = hexToBytes(redeemScript);
+    const scriptSig = bytesToHex([...varIntBytes(rsBytes.length), ...rsBytes]);
+    scriptSigs.push(scriptSig);
+  }
+
+  return injectScriptSigs(txHex, scriptSigs, 0, true, witnesses);
+}
+
+/* ============================================================
+   SIGN P2WPKH
+   ============================================================ */
+function signP2WPKH(txHex, privBytes, pubKey) {
+  const inCount = selectedUTXOs.length;
+  const sigs    = [];
+  
+  // P2WPKH scriptCode is P2PKH equivalent of the pubkey hash
+  const pkh = hash160(bytesToHex(pubKey));
+  const scriptCode = '76a914' + pkh + '88ac';
+
+  for (let i = 0; i < inCount; i++) {
+    const amount  = selectedUTXOs[i].value;
+    const sighash = computeSegwitSighash(txHex, i, amount, scriptCode, 0);
+    const sig     = ecdsaSign(sighash, privBytes);
+    const sigDer  = toDER(sig) + '01'; // SIGHASH_ALL
+    sigs.push({ sigDer, pubKey: bytesToHex(pubKey) });
+  }
+
+  const witnesses = sigs.map(s => [s.sigDer, s.pubKey]);
+  return injectScriptSigs(txHex, sigs.map(() => ''), 0, true, witnesses);
+}
+
+/* ============================================================
+   INJECT SCRIPTSIGS / WITNESSES
+   ============================================================ */
+function injectScriptSigs(txHex, scriptSigs, locktime, segwit, witnesses) {
+  const txBytes = hexToBytes(txHex);
+  let offset    = 4;
+  const inCount = txBytes[offset++];
+  const inputs  = [];
+
+  for (let i = 0; i < inCount; i++) {
+    const txid = txBytes.slice(offset, offset + 32); offset += 32;
+    const vout = readUint32LE(txBytes, offset); offset += 4;
+    const sl   = txBytes[offset++]; offset += sl;
+    const seq  = txBytes.slice(offset, offset + 4); offset += 4;
+    inputs.push({ txid, vout, seq });
+  }
+
+  const outCount = txBytes[offset++];
+  const outputs  = [];
+  for (let i = 0; i < outCount; i++) {
+    const value  = txBytes.slice(offset, offset + 8); offset += 8;
+    const sl     = txBytes[offset++];
+    const script = txBytes.slice(offset, offset + sl); offset += sl;
+    outputs.push({ value, script });
+  }
+
+  // Read locktime from original tx (last 4 bytes after outputs)
+  const locktimeBytes = txBytes.slice(offset, offset + 4);
+
+  // version (4 bytes LE)
+  let result = [2, 0, 0, 0];
+  // SegWit marker + flag must come AFTER version and BEFORE input count
+  if (segwit) result.push(0x00, 0x01);
+  result.push(inCount);
+
+  for (let i = 0; i < inCount; i++) {
+    result.push(...inputs[i].txid, ...uint32LEBytes(inputs[i].vout));
+    const ss = hexToBytes(scriptSigs[i] || '');
+    result.push(...varIntBytes(ss.length), ...ss);
+    result.push(...inputs[i].seq);
+  }
+
+  result.push(outCount);
+  for (const o of outputs) {
+    result.push(...o.value, ...varIntBytes(o.script.length), ...o.script);
+  }
+
+  if (segwit && witnesses) {
+    for (const w of witnesses) {
+      result.push(w.length);
+      for (const item of w) {
+        const b = hexToBytes(item);
+        result.push(...varIntBytes(b.length), ...b);
+      }
+    }
+  }
+
+  result.push(...locktimeBytes);
+  return bytesToHex(result);
+}
+
+/* ============================================================
+   DISPLAY SIGNED TX
+   ============================================================ */
+function showSignedTx(hex, pubKey) {
+  const d    = document.getElementById('signedTxDisplay');
+  const size = hex.length / 2;
+  const addr = document.getElementById('queryAddr').value.trim();
+  const type = detectScriptType(addr);
+  const typeLabel = type === 'p2pkh' ? 'P2PKH' : type === 'p2wpkh' ? 'P2WPKH' : type === 'p2sh-p2wpkh' ? 'P2SH-P2WPKH' : type === 'p2tr' ? 'Taproot P2TR' : '?';
+  const seqVal = document.getElementById('seqHex').value;
+  const rbfLabel = seqVal === 'fffffffd'
+    ? '<span style="color:var(--accent)">🔁 RBF مفعّل</span>'
+    : '<span style="color:var(--text3)">🔒 RBF معطَّل</span>';
+  d.innerHTML = `
+    <div class="stat-row">
+      <div class="stat-pill">الحجم <strong>${size} bytes</strong></div>
+      <div class="stat-pill">vsize ~<strong>${Math.ceil(size * 0.75)} vBytes</strong></div>
+      <div class="stat-pill">النوع <strong>${typeLabel}</strong></div>
+      <div class="stat-pill">Public Key <strong>${bytesToHex(pubKey).slice(0, 16)}...</strong></div>
+      <div class="stat-pill">${rbfLabel}</div>
+    </div>
+    <div class="result-panel">
+      <div class="result-head">
+        Signed Raw TX Hex
+        <button class="copy-btn" onclick="copyText('${hex}',this)">نسخ</button>
+      </div>
+      <div class="result-body"><div class="mono-block">${hex}</div></div>
+    </div>`;
+}
+
+/* ============================================================
+   BROADCAST
+   ============================================================ */
+function mempoolBase(net) {
+  if (net === 'testnet4') return 'https://mempool.space/testnet4';
+  if (net === 'testnet')  return 'https://mempool.space/testnet';
+  return 'https://mempool.space';
+}
+
+function updateBroadcastLinks() {
+  const base = mempoolBase(getNet());
+  const lnk  = document.getElementById('mempoolPushLink');
+  if (lnk) { lnk.href = base + '/tx/push'; lnk.textContent = base.replace('https://', '') + '/tx/push'; }
+}
+
+async function broadcastTx() {
+  if (!signedHex) { alert('وقّع المعاملة أولاً.'); return; }
+  const btn    = document.getElementById('broadcastBtn');
+  const result = document.getElementById('broadcastResult');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> جارٍ البث...';
+
+  const base = mempoolBase(getNet());
+
+  try {
+    const r    = await fetch(`${base}/api/tx`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: signedHex
+    });
+    const text = await r.text();
+
+    if (r.ok) {
+      const txid   = text.trim();
+      const txLink = `${base}/tx/${txid}`;
+      result.innerHTML = `<div class="info-box teal">
+        ✅ <strong>تم البث بنجاح!</strong><br/>
+        TXID: <span style="font-family:var(--mono);font-size:10px;word-break:break-all">${txid}</span><br/>
+        <a href="${txLink}" target="_blank" style="color:var(--accent-dark);font-size:11px">🔗 تتبع المعاملة على mempool.space</a>
+      </div>`;
+    } else {
+      result.innerHTML = `<div class="info-box danger">❌ فشل البث: ${text}</div>`;
+    }
+  } catch (e) {
+    result.innerHTML = `<div class="info-box danger">خطأ في الشبكة: ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '📡 بث المعاملة على mempool.space';
+  }
+}
+
+/* ============================================================
+   COPY HELPER
+   ============================================================ */
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✓ تم النسخ';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+function toggleRBF() {
+  const toggle = document.getElementById('rbfToggle');
+  const knob   = document.getElementById('rbfKnob');
+  const seqEl  = document.getElementById('seqHex');
+  const isOn   = seqEl.value === 'fffffffd';
+  if (isOn) {
+    // تعطيل RBF
+    seqEl.value = 'ffffffff';
+    toggle.style.background = 'var(--border2)';
+    knob.style.right = '3px';
+    knob.style.left  = 'auto';
+  } else {
+    // تفعيل RBF
+    seqEl.value = 'fffffffd';
+    toggle.style.background = 'var(--accent)';
+    knob.style.right = 'auto';
+    knob.style.left  = '3px';
+  }
+}
+
+/* تهيئة الـ Toggle عند التحميل — RBF مفعّل افتراضياً */
+(function initRBF() {
+  // RBF مفعّل افتراضياً (fffffffd) — نعكس الـ knob لليسار
+  const knob = document.getElementById('rbfKnob');
+  if (knob) { knob.style.right = 'auto'; knob.style.left = '3px'; }
+})();
+
+
+/* ============================================================
+   RBF — تفكيك معاملة موقَّعة وبناء بديلة برسوم أعلى
+   بدون جلب أي بيانات من البلوكتشين
+   ============================================================ */
+
+let rbfParsed = null;
+
+/* تفكيك raw signed tx hex كاملة (تدعم SegWit/Legacy) */
+function parseSignedTx(hex) {
+  const b = hexToBytes(hex);
+  let o = 0;
+
+  const version = readUint32LE(b, o); o += 4;
+
+  // كشف SegWit marker/flag
+  let segwit = false;
+  if (b[o] === 0x00 && b[o+1] === 0x01) { segwit = true; o += 2; }
+
+  // Inputs
+  const inCount = b[o++];
+  const inputs = [];
+  for (let i = 0; i < inCount; i++) {
+    // txid مقلوب (little-endian في الـ wire format)
+    const txidLE = b.slice(o, o+32); o += 32;
+    const txid   = bytesToHex([...txidLE].reverse()); // للعرض
+    const txidRaw = bytesToHex(txidLE);               // للبناء (كما هو)
+    const vout   = readUint32LE(b, o); o += 4;
+    const ssLen  = b[o++];
+    const scriptSig = bytesToHex(b.slice(o, o+ssLen)); o += ssLen;
+    const seqRaw = b.slice(o, o+4); o += 4;
+    const seq    = readUint32LE(seqRaw, 0);
+    inputs.push({ txid, txidRaw, vout, scriptSig, seq, seqBytes: bytesToHex(seqRaw) });
+  }
+
+  // Outputs
+  const outCount = b[o++];
+  const outputs = [];
+  for (let i = 0; i < outCount; i++) {
+    const valBytes = b.slice(o, o+8); o += 8;
+    let val = 0n;
+    for (let j = 0; j < 8; j++) val |= BigInt(b[o-8+j]) << BigInt(8*j);
+    const spkLen = b[o++];
+    const scriptPubKey = bytesToHex(b.slice(o, o+spkLen)); o += spkLen;
+    outputs.push({ value: Number(val), valBytes: bytesToHex(valBytes), scriptPubKey });
+  }
+
+  // Witness data — نحفظها كما هي لإعادة البناء لاحقاً إذا أردنا
+  const witnessData = [];
+  if (segwit) {
+    for (let i = 0; i < inCount; i++) {
+      const stackItems = b[o++];
+      const items = [];
+      for (let j = 0; j < stackItems; j++) {
+        const len = b[o++];
+        items.push(bytesToHex(b.slice(o, o+len))); o += len;
+      }
+      witnessData.push(items);
+    }
+  }
+
+  const locktime = readUint32LE(b, o);
+  const locktimeBytes = bytesToHex(b.slice(o, o+4));
+
+  return { version, segwit, inputs, outputs, witnessData, locktime, locktimeBytes };
+}
+
+/* عرض تحليل المعاملة */
+function analyzeRbfTx() {
+  const ar  = document.getElementById('rbfAnalysis');
+  const raw = (document.getElementById('rbfOrigTx').value || '').trim().toLowerCase().replace(/\s+/g,'');
+  if (!raw) return ar.innerHTML = '<div class="info-box danger">أدخل hex المعاملة الأصلية.</div>';
+
+  try {
+    const tx = parseSignedTx(raw);
+    rbfParsed = tx;
+
+    // فحص RBF
+    const rbfOk = tx.inputs.every(inp => inp.seq <= 0xFFFFFFFD);
+    const rbfStatus = rbfOk
+      ? '<span style="color:var(--accent);font-weight:600">✅ RBF مفعّل — قابلة للاستبدال</span>'
+      : '<span style="color:var(--danger);font-weight:600">❌ RBF غير مفعّل في هذه المعاملة</span>';
+
+    const totalOut = tx.outputs.reduce((s,o) => s + o.value, 0);
+
+    // تحديد نوع scriptPubKey
+    function spkType(spk) {
+      if (spk.startsWith('76a914') && spk.endsWith('88ac')) return 'P2PKH';
+      if (spk.startsWith('0014'))  return 'P2WPKH';
+      if (spk.startsWith('a914') && spk.endsWith('87')) return 'P2SH';
+      if (spk.startsWith('5120'))  return 'Taproot';
+      if (spk.startsWith('6a'))    return 'OP_RETURN';
+      return '?';
+    }
+
+    let html = `<div class="result-panel" style="margin-bottom:12px">
+      <div class="result-head">📋 تفاصيل المعاملة المحللة</div>
+      <div class="result-body" style="font-family:var(--mono);font-size:11px;line-height:2">
+        <b>الإصدار:</b> ${tx.version} &nbsp;|&nbsp;
+        <b>SegWit:</b> ${tx.segwit ? '✅ نعم' : 'لا'} &nbsp;|&nbsp;
+        <b>nLocktime:</b> ${tx.locktime}<br>
+        <b>حالة RBF:</b> ${rbfStatus}<br>
+        <hr style="border-color:var(--border);margin:6px 0"/>
+        <b>المدخلات (${tx.inputs.length}):</b><br>`;
+
+    tx.inputs.forEach((inp, i) => {
+      html += `&nbsp;&nbsp;[${i}] <span style="color:var(--accent)">${inp.txid.slice(0,16)}...</span>:${inp.vout} &nbsp; seq=0x${inp.seq.toString(16).padStart(8,'0')}<br>`;
+    });
+
+    html += `<hr style="border-color:var(--border);margin:6px 0"/>
+        <b>المخرجات (${tx.outputs.length}):</b><br>`;
+
+    tx.outputs.forEach((out, i) => {
+      const t = spkType(out.scriptPubKey);
+      const color = t === 'OP_RETURN' ? 'var(--text3)' : i === 1 ? 'var(--success)' : 'var(--text)';
+      html += `&nbsp;&nbsp;<span style="cursor:pointer;text-decoration:underline dotted" onclick="document.getElementById('rbfChangeIdx').value=${i}" title="اضغط لاختياره كـ Change">[${i}]</span> <b style="color:${color}">${out.value.toLocaleString()} sat</b> &nbsp; <span style="color:var(--text3)">${t}</span><br>`;
+    });
+
+    html += `<hr style="border-color:var(--border);margin:6px 0"/>
+        <b>إجمالي الـ outputs:</b> ${totalOut.toLocaleString()} sat
+        <span style="color:var(--text3);font-size:10px">&nbsp;(الرسوم = قيمة الـ Input − هذا الرقم)</span>
+      </div>
+    </div>
+    <div class="info-box" style="background:var(--info-bg);color:#5b7fa6;border:1.5px solid rgba(180,196,212,0.3);font-size:12px">
+      💡 اضغط على رقم الـ output [<b>اضغط على الرقم</b>] لاختياره كـ Change (الذي سيُخصم منه فرق الرسوم).
+      الـ output الأخضر [1] هو الـ Change المقترح.
+    </div>`;
+
+    ar.innerHTML = html;
+    if (rbfOk) document.getElementById('rbfBuildArea').style.display = '';
+    else document.getElementById('rbfBuildArea').style.display = 'none';
+
+    // بناء حقول قيمة منفصلة لكل input بعد التحليل
+    renderRbfInputValueFields(tx.inputs);
+
+    // جلب عنوان المرسل تلقائياً من البلوكتشين
+    rbfAutoFetchSenderAddr(tx.inputs[0]);
+
+    // تحديث تلميح sat/vB بعد معرفة حجم المعاملة
+    updateRbfFeeHint();
+
+  } catch(e) {
+    ar.innerHTML = `<div class="info-box danger">خطأ في تحليل المعاملة: ${e.message}</div>`;
+    console.error(e);
+  }
+}
+
+/* بناء unsigned TX للـ RBF */
+function buildRbfTx() {
+  const res = document.getElementById('rbfBuildResult');
+  if (!rbfParsed) return res.innerHTML = '<div class="info-box danger">حلّل المعاملة أولاً.</div>';
+
+  const oldFee    = parseInt(document.getElementById('rbfOldFee').value);
+  const newFee    = parseInt(document.getElementById('rbfNewFee').value);
+  const changeIdx = parseInt(document.getElementById('rbfChangeIdx').value);
+
+  if (!oldFee || oldFee <= 0)
+    return res.innerHTML = '<div class="info-box danger">أدخل قيمة الرسوم الأصلية.</div>';
+  if (!newFee || newFee <= 0)
+    return res.innerHTML = '<div class="info-box danger">أدخل قيمة الرسوم الجديدة.</div>';
+  if (newFee <= oldFee)
+    return res.innerHTML = `<div class="info-box danger">الرسوم الجديدة (${newFee} sat) يجب أن تكون أعلى من الأصلية (${oldFee} sat).</div>`;
+  if (isNaN(changeIdx) || changeIdx < 0 || changeIdx >= rbfParsed.outputs.length)
+    return res.innerHTML = '<div class="info-box danger">رقم الـ Change output غير صحيح.</div>';
+
+  const tx = rbfParsed;
+  const changeOut = tx.outputs[changeIdx];
+
+  // الفرق بين الرسوم الجديدة والقديمة يُخصم من الـ Change
+  const feeDiff     = newFee - oldFee;
+  const newChangeVal = changeOut.value - feeDiff;
+
+  if (newChangeVal < 0)
+    return res.innerHTML = `<div class="info-box danger">فرق الرسوم (${feeDiff} sat) أكبر من قيمة الـ Change output (${changeOut.value} sat).</div>`;
+  if (newChangeVal < 546 && newChangeVal > 0)
+    return res.innerHTML = `<div class="info-box danger">الناتج (${newChangeVal} sat) أقل من الحد الأدنى للـ dust (546 sat).</div>`;
+
+  try {
+    // بناء unsigned TX بنفس الـ inputs وتعديل الـ Change فقط
+    let txHex = uint32LE(tx.version); // version
+
+    // inputs — نفس الـ inputs لكن بـ scriptSig فارغ (unsigned)
+    txHex += varInt(tx.inputs.length);
+    for (const inp of tx.inputs) {
+      // txid بالـ raw (little-endian كما في الـ wire)
+      txHex += inp.txidRaw;
+      txHex += uint32LE(inp.vout);
+      txHex += '00'; // empty scriptSig
+      // نحتفظ بنفس الـ sequence (RBF = fdffffff)
+      txHex += inp.seqBytes;
+    }
+
+    // outputs — نفسها مع تعديل الـ Change
+    txHex += varInt(tx.outputs.length);
+    for (let i = 0; i < tx.outputs.length; i++) {
+      const out = tx.outputs[i];
+      const val = (i === changeIdx) ? newChangeVal : out.value;
+      txHex += uint64LE(val);
+      txHex += varInt(out.scriptPubKey.length / 2) + out.scriptPubKey;
+    }
+
+    txHex += uint32LE(tx.locktime);
+
+    // عرض النتيجة
+    const oldFeeEst = feeDiff; // فرق الرسوم المضاف
+    res.innerHTML = `
+      <div style="margin-top:14px">
+        <div class="stat-row">
+          <div class="stat-pill">الرسوم القديمة <strong>${oldFee} sat</strong></div>
+          <div class="stat-pill">الرسوم الجديدة <strong style="color:var(--accent)">${newFee} sat</strong> (+${feeDiff})</div>
+          <div class="stat-pill">Change جديد <strong>${newChangeVal.toLocaleString()} sat</strong></div>
+          <div class="stat-pill">🔁 <strong style="color:var(--accent)">RBF جاهزة</strong></div>
+        </div>
+        <div class="result-panel">
+          <div class="result-head">
+            Raw TX Hex (غير موقَّعة — جاهزة للتوقيع)
+            <button class="copy-btn" onclick="copyText('${txHex}',this)">نسخ</button>
+          </div>
+          <div class="result-body"><div class="mono-block">${txHex}</div></div>
+        </div>
+        <div class="info-box teal" style="margin-top:10px;font-size:12px">
+          ✅ انسخ الـ hex أعلاه والصقه في تبويب <b>"التوقيع والإرسال"</b> ووقّعه بنفس المفتاح الخاص ثم ابثّه.
+        </div>
+      </div>`;
+
+    // نملأ حقل التوقيع تلقائياً
+    const unsignedField = document.getElementById('unsignedTx');
+    if (unsignedField) unsignedField.value = txHex;
+    const rbfUnsignedField = document.getElementById('rbfUnsignedTx');
+    if (rbfUnsignedField) rbfUnsignedField.value = txHex;
+
+  } catch(e) {
+    res.innerHTML = `<div class="info-box danger">خطأ في البناء: ${e.message}</div>`;
+    console.error(e);
+  }
+}
+
+
+/* ============================================================
+   RBF TAB — توقيع مستقل 100% بدون أي globals
+   ============================================================ */
+let rbfSignedHex = null;
+
+async function signRbfTx() {
+  const sr         = document.getElementById('rbfSignResult');
+  const privKeyRaw = document.getElementById('rbfPrivKey').value.trim();
+  const unsignedH  = document.getElementById('rbfUnsignedTx').value.trim().toLowerCase().replace(/\s+/g,'');
+  const senderAddr = document.getElementById('rbfSenderAddr').value.trim();
+  const inputValRaw = document.getElementById('rbfInputValue').value.trim();
+
+  if (!privKeyRaw) return sr.innerHTML = '<div class="info-box danger">أدخل المفتاح الخاص.</div>';
+  if (!unsignedH)  return sr.innerHTML = '<div class="info-box danger">أدخل Raw TX غير الموقَّعة من الخطوة ①.</div>';
+  if (!senderAddr) return sr.innerHTML = '<div class="info-box danger">أدخل عنوان المرسل لتحديد نوع التوقيع.</div>';
+
+  sr.innerHTML = '<div class="fetch-indicator"><div class="fetch-dot"></div>جارٍ التوقيع...</div>';
+
+  try {
+    await new Promise(r => setTimeout(r, 60));
+
+    const { bytes: privBytes, compressed } = parsePrivKey(privKeyRaw);
+    const pubKey    = getPublicKey(privBytes, compressed);
+    const pubKeyHex = bytesToHex(pubKey);
+    const type      = detectScriptType(senderAddr);
+
+    if (!type) throw new Error('نوع العنوان غير مدعوم. يجب أن يكون P2PKH أو P2WPKH أو P2SH-P2WPKH أو Taproot.');
+
+    // بناء مصفوفة UTXOs من المعاملة المحللة + القيمة المُدخلة
+    const txParsed = rbfParsed;
+    if (!txParsed) throw new Error('حلِّل المعاملة الأصلية في الخطوة ① أولاً.');
+
+    const inputValue = inputValRaw ? parseInt(inputValRaw) : 0;
+    // نبني fakeUTXOs — نقرأ القيم من الحقول الفردية أولاً
+    const fakeUTXOs = txParsed.inputs.map((inp, i) => {
+      const perInputEl = document.getElementById('rbfInputVal_' + i);
+      const val = (perInputEl && parseInt(perInputEl.value)) || inputValue;
+      return {
+        txid: inp.txid,
+        vout: inp.vout,
+        value: val,
+        scriptPubKey: addressToScriptPK(senderAddr)
+      };
+    });
+
+    // التحقق من أن كل input له قيمة (مطلوب لـ SegWit/Taproot)
+    const missingVal = fakeUTXOs.findIndex(u => !u.value || u.value <= 0);
+
+    const customRS       = (document.getElementById('rbfRedeemScriptInput') || {}).value;
+    const redeemOverride = (customRS || '').trim() || null;
+    const customTweak    = ((document.getElementById('rbfTaprootTweakInput') || {}).value || '').trim() || null;
+
+    let signed;
+    if (type === 'p2pkh') {
+      signed = signP2PKH_direct(unsignedH, privBytes, pubKey, senderAddr, fakeUTXOs);
+    } else if (type === 'p2wpkh') {
+      if (missingVal >= 0) throw new Error(`أدخل قيمة Input [${missingVal}] بالـ Satoshi — مطلوبة لتوقيع SegWit.`);
+      signed = signP2WPKH_direct(unsignedH, privBytes, pubKey, fakeUTXOs);
+    } else if (type === 'p2sh-p2wpkh') {
+      if (missingVal >= 0) throw new Error(`أدخل قيمة Input [${missingVal}] بالـ Satoshi — مطلوبة لتوقيع P2SH-SegWit.`);
+      signed = signP2SH_P2WPKH_direct(unsignedH, privBytes, pubKey, fakeUTXOs, redeemOverride);
+    } else if (type === 'p2tr') {
+      if (missingVal >= 0) throw new Error(`أدخل قيمة Input [${missingVal}] بالـ Satoshi — مطلوبة لتوقيع Taproot.`);
+      signed = signP2TR_direct(unsignedH, privBytes, fakeUTXOs, customTweak);
+    }
+
+    rbfSignedHex = signed;
+    const size = signed.length / 2;
+    const typeLabel = {p2pkh:'P2PKH', p2wpkh:'P2WPKH', 'p2sh-p2wpkh':'P2SH-P2WPKH', p2tr:'Taproot P2TR'}[type] || '?';
+
+    sr.innerHTML = '<div class="info-box teal" style="margin-top:12px">✅ تم التوقيع بنجاح!</div>';
+
+    // عرض في قسم البث
+    document.getElementById('rbfBroadcastSection').style.display = '';
+    document.getElementById('rbfSignedTxDisplay').innerHTML =
+      '<div class="stat-row">' +
+      '<div class="stat-pill">الحجم <strong>' + size + ' bytes</strong></div>' +
+      '<div class="stat-pill">النوع <strong>' + typeLabel + '</strong></div>' +
+      '<div class="stat-pill">Public Key <strong>' + pubKeyHex.slice(0,16) + '...</strong></div>' +
+      '</div>' +
+      '<div class="result-panel">' +
+      '<div class="result-head">Signed Raw TX Hex — RBF' +
+      ' <button class="copy-btn" onclick="copyText(\'' + signed + '\',this)">نسخ</button></div>' +
+      '<div class="result-body"><div class="mono-block">' + signed + '</div></div>' +
+      '</div>';
+
+  } catch(e) {
+    sr.innerHTML = '<div class="info-box danger">خطأ في التوقيع: ' + e.message + '</div>';
+    console.error(e);
+  }
+}
+
+/* نسخ مستقلة من دوال التوقيع تستقبل utxos كمعامل بدون globals */
+
+function signP2PKH_direct(txHex, privBytes, pubKey, senderAddr, utxos) {
+  const txBytes = hexToBytes(txHex);
+  const inCount = txBytes[4];
+  const scriptSigs = [];
+  const fallbackSPK = addressToScriptPK(senderAddr);
+  for (let i = 0; i < inCount; i++) {
+    const spk = (utxos[i] && utxos[i].scriptPubKey) ? utxos[i].scriptPubKey : fallbackSPK;
+    const sighash = computeSighashLegacy(txHex, i, spk);
+    const sig = ecdsaSign(sighash, privBytes);
+    const sigDer = toDER(sig) + '01';
+    scriptSigs.push(buildP2PKHScriptSig(sigDer, bytesToHex(pubKey)));
+  }
+  return injectScriptSigs(txHex, scriptSigs, 0, false, null);
+}
+
+function signP2WPKH_direct(txHex, privBytes, pubKey, utxos) {
+  const inCount = utxos.length;
+  const pkh = hash160(bytesToHex(pubKey));
+  const scriptCode = '76a914' + pkh + '88ac';
+  const witnesses = [];
+  for (let i = 0; i < inCount; i++) {
+    const amount = utxos[i].value;
+    const sighash = computeSegwitSighash(txHex, i, amount, scriptCode, 0);
+    const sig = ecdsaSign(sighash, privBytes);
+    const sigDer = toDER(sig) + '01';
+    witnesses.push([sigDer, bytesToHex(pubKey)]);
+  }
+  return injectScriptSigs(txHex, utxos.map(() => ''), 0, true, witnesses);
+}
+
+function signP2SH_P2WPKH_direct(txHex, privBytes, pubKey, utxos, customRedeemScript) {
+  const pubKeyHex = bytesToHex(pubKey);
+  const pkh = hash160(pubKeyHex);
+  let redeemScript;
+  if (customRedeemScript) {
+    const rs = customRedeemScript.toLowerCase().replace(/\s+/g,'');
+    if (!rs.startsWith('0014') || rs.length !== 44)
+      throw new Error('redeemScript يجب أن يبدأ بـ 0014 ويتكون من 44 حرف hex.');
+    redeemScript = rs;
+  } else {
+    redeemScript = '0014' + pkh;
+  }
+  const rsPKH = redeemScript.slice(4);
+  const scriptCode = '76a914' + rsPKH + '88ac';
+  const witnesses = [];
+  const scriptSigs = [];
+  for (let i = 0; i < utxos.length; i++) {
+    const amount = utxos[i].value;
+    const sighash = computeSegwitSighash(txHex, i, amount, scriptCode, 0);
+    const sig = ecdsaSign(sighash, privBytes);
+    const sigDer = toDER(sig) + '01';
+    witnesses.push([sigDer, pubKeyHex]);
+    const rsBytes = hexToBytes(redeemScript);
+    scriptSigs.push(bytesToHex([...varIntBytes(rsBytes.length), ...rsBytes]));
+  }
+  return injectScriptSigs(txHex, scriptSigs, 0, true, witnesses);
+}
+
+function signP2TR_direct(txHex, privBytes, utxos, customTweakHex) {
+  const customTweak = (customTweakHex && customTweakHex.length === 64) ? hexToBytes(customTweakHex) : null;
+  const tweakedPriv = taprootTweakPrivkey(privBytes, customTweak);
+
+  // ── تحقق من تطابق المفتاح مع الـ scriptPubKey ──
+  const secp = getSecp256k1();
+  const Q = secp.pointMultiply(secp.G, secp.toBig(tweakedPriv));
+  const expectedSpk = '5120' + bytesToHex(Array.from(Q.x));
+  for (let i = 0; i < utxos.length; i++) {
+    const actualSpk = (utxos[i].scriptPubKey || '').toLowerCase();
+    if (actualSpk && actualSpk !== expectedSpk) {
+      throw new Error(
+        `UTXO[${i}]: المفتاح الخاص لا يطابق الـ scriptPubKey!\n` +
+        `scriptPubKey المتوقع: ${expectedSpk}\n` +
+        `scriptPubKey الفعلي:  ${actualSpk}`
+      );
+    }
+  }
+
+  const inCount = utxos.length;
+  const witnesses = [];
+  for (let i = 0; i < inCount; i++) {
+    const sighash = computeTaprootSighash_direct(txHex, i, utxos);
+    const sig = schnorrSign(sighash, tweakedPriv, new Array(32).fill(0));
+    witnesses.push([bytesToHex(sig)]);
+  }
+  return injectScriptSigs(txHex, Array(inCount).fill(''), 0, true, witnesses);
+}
+
+function computeTaprootSighash_direct(txHex, inputIdx, utxos) {
+  const txBytes = hexToBytes(txHex);
+  let offset = 4;
+  const inCount = txBytes[offset++];
+  const inputs = [];
+  for (let i = 0; i < inCount; i++) {
+    const txid = txBytes.slice(offset, offset + 32); offset += 32;
+    const vout = readUint32LE(txBytes, offset); offset += 4;
+    const sl = txBytes[offset++]; offset += sl;
+    const seq = txBytes.slice(offset, offset + 4); offset += 4;
+    inputs.push({ txid, vout, seq });
+  }
+  const outCount = txBytes[offset++];
+  const outputs = [];
+  for (let i = 0; i < outCount; i++) {
+    const value = txBytes.slice(offset, offset + 8); offset += 8;
+    const sl = txBytes[offset++];
+    const script = txBytes.slice(offset, offset + sl); offset += sl;
+    outputs.push({ value, script });
+  }
+  const nVersion = txBytes.slice(0, 4);
+  const nLocktime = txBytes.slice(offset, offset + 4);
+
+  const prevoutsData = inputs.flatMap(i => [...i.txid, ...uint32LEBytes(i.vout)]);
+  const shaPrevouts = sha256Bytes(prevoutsData);
+  const amountsData = utxos.flatMap(u => uint64LEBytes(u.value));
+  const shaAmounts = sha256Bytes(amountsData);
+  const spkData = utxos.flatMap(u => {
+    const spk = hexToBytes(u.scriptPubKey);
+    return [...varIntBytes(spk.length), ...spk];
+  });
+  const shaScriptPubkeys = sha256Bytes(spkData);
+  const seqData = inputs.flatMap(i => i.seq);
+  const shaSequences = sha256Bytes(seqData);
+  const outData = outputs.flatMap(o => [...o.value, ...varIntBytes(o.script.length), ...o.script]);
+  const shaOutputs = sha256Bytes(outData);
+
+  // BIP341 preimage — SIGHASH_DEFAULT، key path، non-ANYONECANPAY
+  const preimage = [
+    0x00, 0x00,
+    ...nVersion, ...nLocktime,
+    ...shaPrevouts, ...shaAmounts, ...shaScriptPubkeys, ...shaSequences, ...shaOutputs,
+    0x00,
+    ...uint32LEBytes(inputIdx)
+  ];
+  return taggedHash('TapSighash', preimage);
+}
+
+async function broadcastRbfTx() {
+  const btn = document.getElementById('rbfBroadcastBtn');
+  const res = document.getElementById('rbfBroadcastResult');
+  if (!rbfSignedHex) return res.innerHTML = '<div class="info-box danger">وقّع المعاملة أولاً في الخطوة ②.</div>';
+
+  btn.disabled = true;
+  btn.innerHTML = '⏳ جارٍ البث...';
+  res.innerHTML = '';
+
+  const base = mempoolBase(getNet());
+  try {
+    const r = await fetch(base + '/api/tx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: rbfSignedHex
+    });
+    const txt = await r.text();
+    if (r.ok) {
+      res.innerHTML =
+        '<div class="info-box success" style="margin-top:14px">' +
+        '✅ <strong>تم بث معاملة RBF بنجاح!</strong><br>' +
+        '<div style="margin-top:8px;font-family:var(--mono);font-size:12px;word-break:break-all">' + txt + '</div>' +
+        '<a href="' + base + '/tx/' + txt + '" target="_blank" style="display:inline-block;margin-top:10px;' +
+        'color:var(--accent);font-weight:600;text-decoration:underline">🔗 عرض على mempool.space</a>' +
+        '</div>';
+    } else {
+      res.innerHTML = '<div class="info-box danger" style="margin-top:14px">❌ فشل البث:<br>' + txt + '</div>';
+    }
+  } catch(e) {
+    res.innerHTML = '<div class="info-box danger" style="margin-top:14px">❌ خطأ في الاتصال: ' + e.message + '</div>';
+  }
+  btn.disabled = false;
+  btn.innerHTML = '📡 بث معاملة RBF على mempool.space';
+}
+
+/* ============================================================
+   RBF — بناء حقول قيمة Input لكل UTXO وجلبها تلقائياً
+   ============================================================ */
+function renderRbfInputValueFields(inputs) {
+  const container = document.getElementById('rbfInputValuesList');
+  if (!container || !inputs || inputs.length === 0) return;
+
+  if (inputs.length === 1) {
+    container.innerHTML = `
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="rbfInputVal_0" type="number" placeholder="قيمة الـ UTXO بالـ Satoshi" style="flex:1"
+          oninput="document.getElementById('rbfInputValue').value=this.value"/>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);white-space:nowrap;flex-shrink:0">
+          ${inputs[0].txid.slice(0,14)}…:${inputs[0].vout}
+        </div>
+      </div>`;
+  } else {
+    container.innerHTML = inputs.map((inp, i) => `
+      <div style="margin-bottom:8px">
+        <div style="font-size:10px;font-family:var(--mono);color:var(--text3);margin-bottom:4px">
+          Input [${i}] — ${inp.txid.slice(0,18)}…:${inp.vout}
+        </div>
+        <input id="rbfInputVal_${i}" type="number" placeholder="قيمة Input [${i}] بالـ Satoshi"
+          oninput="if(${i}===0)document.getElementById('rbfInputValue').value=this.value"/>
+      </div>`).join('');
+  }
+}
+
+async function rbfFetchInputValues() {
+  if (!rbfParsed) {
+    document.getElementById('rbfFetchValuesStatus').innerHTML =
+      '<span style="color:var(--danger)">❌ حلِّل المعاملة في الخطوة ① أولاً.</span>';
+    return;
+  }
+  const btn = document.getElementById('rbfFetchValuesBtn');
+  const status = document.getElementById('rbfFetchValuesStatus');
+  btn.disabled = true;
+  btn.textContent = '⏳ جاري الجلب...';
+  status.innerHTML = '<span style="color:var(--text3)">جاري جلب قيم الـ UTXOs من mempool.space...</span>';
+
+  const baseApi = API[getNet()];
+  let allOk = true;
+  const results = [];
+
+  for (let i = 0; i < rbfParsed.inputs.length; i++) {
+    const inp = rbfParsed.inputs[i];
+    try {
+      const r = await fetch(`${baseApi}/tx/${inp.txid}`);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const txData = await r.json();
+      const val = txData.vout[inp.vout].value; // بالـ satoshi
+      const el = document.getElementById('rbfInputVal_' + i);
+      if (el) { el.value = val; el.style.borderColor = 'var(--success)'; }
+      // مزامنة الحقل المخفي بقيمة الـ input الأول
+      if (i === 0) {
+        const hidden = document.getElementById('rbfInputValue');
+        if (hidden) hidden.value = val;
+      }
+      results.push({ i, val, ok: true });
+    } catch(e) {
+      results.push({ i, ok: false, err: e.message });
+      allOk = false;
+    }
+  }
+
+  const summary = results.map(r =>
+    r.ok
+      ? `<span style="color:var(--success)">✅ Input [${r.i}]: ${r.val.toLocaleString()} sat</span>`
+      : `<span style="color:var(--danger)">❌ Input [${r.i}]: فشل الجلب (${r.err})</span>`
+  ).join(' &nbsp;·&nbsp; ');
+
+  status.innerHTML = summary;
+  btn.disabled = false;
+  btn.textContent = allOk ? '✅ تم الجلب' : '🔄 إعادة المحاولة';
+}
+
+/* ============================================================
+   RBF — جلب عنوان المرسل تلقائياً من أول input
+   ============================================================ */
+async function rbfAutoFetchSenderAddr(firstInput) {
+  const addrEl   = document.getElementById('rbfSenderAddr');
+  const rsRow    = document.getElementById('rbfRedeemScriptRow');
+  const trRow    = document.getElementById('rbfTaprootTweakRow');
+  if (!addrEl || !firstInput) return;
+
+  // لا نتجاوز ما أدخله المستخدم يدوياً
+  if (addrEl.value.trim()) return;
+
+  addrEl.placeholder = '⏳ جارٍ الجلب التلقائي...';
+  addrEl.style.borderColor = 'var(--accent)';
+
+  try {
+    const base   = API[getNet()];
+    const r      = await fetch(`${base}/tx/${firstInput.txid}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const txData = await r.json();
+    const vout   = txData.vout[firstInput.vout];
+    const addr   = vout.scriptpubkey_address;
+
+    if (addr) {
+      addrEl.value = addr;
+      addrEl.style.borderColor = 'var(--success)';
+      addrEl.style.boxShadow   = '0 0 0 3px rgba(168,196,168,0.2)';
+      // تفعيل صفوف redeemScript / taproot tweak حسب نوع العنوان
+      if (rsRow) rsRow.style.display = (addr.startsWith('2') || addr.startsWith('3')) ? '' : 'none';
+      if (trRow) trRow.style.display = (addr.startsWith('bc1p') || addr.startsWith('tb1p')) ? '' : 'none';
+      setTimeout(() => {
+        addrEl.style.borderColor = '';
+        addrEl.style.boxShadow   = '';
+      }, 3000);
+    } else {
+      throw new Error('العنوان غير متاح في البيانات');
+    }
+  } catch(e) {
+    addrEl.placeholder = 'تعذّر الجلب التلقائي — أدخل العنوان يدوياً';
+    addrEl.style.borderColor = '';
+  }
+}
+
+/* ============================================================
+   تقدير vsize وعرض sat/vB
+   ============================================================ */
+
+/* تقدير vsize (virtual bytes) حسب نوع العنوان وعدد inputs/outputs
+   BIP141: vsize = ceil((weight) / 4)
+   weight = base_size * 3 + total_size
+   ─────────────────────────────────────────────
+   P2PKH input:        148 vB  (non-segwit، weight = weight)
+   P2WPKH input:       ~68 vB  (41 non-witness + 107*0.25 witness)
+   P2SH-P2WPKH input:  ~91 vB
+   P2TR input:         ~58 vB  (41 non-witness + 65*0.25 witness)
+   P2PKH output:       34 vB
+   P2WPKH output:      31 vB
+   P2TR output:        43 vB
+   overhead:           10 vB (version+locktime+marker+flag)
+*/
+function estimateVsize(addrType, nInputs, nOutputs) {
+  const perIn = {
+    'p2pkh':       148,
+    'p2wpkh':       68,
+    'p2sh-p2wpkh':  91,
+    'p2tr':         58
+  }[addrType] || 100;
+  const perOut = {
+    'p2pkh':        34,
+    'p2wpkh':       31,
+    'p2sh-p2wpkh':  32,
+    'p2tr':         43
+  }[addrType] || 34;
+  const overhead = (addrType === 'p2pkh') ? 10 : 11; // +1 for segwit marker/flag
+  return overhead + nInputs * perIn + nOutputs * perOut;
+}
+
+/* لون تدرّجي حسب معدل الرسوم */
+function feeRateColor(rate) {
+  if (rate < 2)   return 'var(--danger)';
+  if (rate < 5)   return 'var(--warn)';
+  if (rate < 20)  return 'var(--success)';
+  if (rate < 100) return 'var(--accent)';
+  return '#d47a7a';
+}
+
+/* تحديث التلميح في تبويب البناء */
+function updateFeeHint() {
+  const hint   = document.getElementById('feeRateHint');
+  if (!hint) return;
+  const fee    = parseInt(document.getElementById('feeRate').value);
+  if (!fee || fee <= 0) { hint.textContent = ''; return; }
+
+  const addr   = (document.getElementById('queryAddr').value || '').trim();
+  const type   = detectScriptType(addr) || 'p2wpkh';
+  const nIn    = selectedUTXOs.length || 1;
+  // outputs: 1 dest + 1 change محتمل
+  const hasChange = document.getElementById('changeAddr').value.trim();
+  const nOut   = hasChange ? 2 : 1;
+  const vsize  = estimateVsize(type, nIn, nOut);
+  const rate   = (fee / vsize).toFixed(2);
+  const color  = feeRateColor(parseFloat(rate));
+
+  hint.innerHTML = `تقدير الحجم: <b>~${vsize} vB</b> &nbsp;→&nbsp; <b style="color:${color}">${rate} sat/vB</b>`;
+}
+
+/* تحديث التلميحين في تبويب RBF */
+function updateRbfFeeHint() {
+  const oldHint = document.getElementById('rbfOldFeeHint');
+  const newHint = document.getElementById('rbfNewFeeHint');
+  if (!oldHint || !newHint) return;
+
+  // حجم المعاملة: إذا تم التحليل نستخدم الـ hex الفعلي (segwit aware)، وإلا نقدّر
+  let vsize = null;
+  if (rbfParsed) {
+    const rawHex = (document.getElementById('rbfOrigTx').value || '').trim().replace(/\s+/g,'');
+    if (rawHex) {
+      const totalBytes = rawHex.length / 2;
+      if (rbfParsed.segwit) {
+        // حساب weight دقيق: non-witness bytes * 4 + witness bytes * 1
+        // تقدير: witness ~= (totalBytes - baseSize) حيث baseSize نحذف الـ witness
+        // طريقة مبسّطة موثوقة: vsize = ceil(weight/4) ≈ base*3/4 + total/4
+        // نستخدم: vsize ≈ totalBytes * 0.75 (تقدير معقول لـ SegWit واحد)
+        vsize = Math.ceil(totalBytes * 0.75);
+      } else {
+        vsize = totalBytes; // legacy: vsize = size
+      }
+    }
+  }
+
+  function renderHint(el, fee) {
+    const f = parseInt(fee);
+    if (!f || f <= 0 || !vsize) { el.textContent = vsize ? `الحجم المقدّر: ~${vsize} vB` : ''; return; }
+    const rate  = (f / vsize).toFixed(2);
+    const color = feeRateColor(parseFloat(rate));
+    el.innerHTML = `~${vsize} vB &nbsp;→&nbsp; <b style="color:${color}">${rate} sat/vB</b>`;
+  }
+
+  renderHint(oldHint, document.getElementById('rbfOldFee').value);
+  renderHint(newHint, document.getElementById('rbfNewFee').value);
+}
+
+/* ============================================================
+   CPFP — Child Pays For Parent
+   ============================================================ */
+let cpfpParentData  = null;   // بيانات TX الأب من API
+let cpfpSelectedOut = null;   // الـ output المختار { vout, value, scriptpubkey_address }
+let cpfpSignedHex   = null;
+
+function cpfpOnTxidChange() {
+  cpfpParentData  = null;
+  cpfpSelectedOut = null;
+  document.getElementById('cpfpChildSection').style.display    = 'none';
+  document.getElementById('cpfpBroadcastSection').style.display = 'none';
+  document.getElementById('cpfpParentResult').innerHTML = '';
+}
+
+async function cpfpAnalyzeParent() {
+  const txid = (document.getElementById('cpfpParentTxid').value || '').trim();
+  if (!txid || txid.length !== 64) {
+    document.getElementById('cpfpParentResult').innerHTML =
+      '<div class="info-box danger">❌ أدخل TXID صحيح (64 حرف hex)</div>'; return;
+  }
+  const res = document.getElementById('cpfpParentResult');
+  res.innerHTML = '<div class="fetch-indicator"><div class="fetch-dot"></div>جلب المعاملة...</div>';
+
+  try {
+    const api  = API[getNet()];
+    const r    = await fetch(`${api}/tx/${txid}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status} — تأكد من الشبكة أو الـ TXID`);
+    const tx   = await r.json();
+    cpfpParentData = tx;
+
+    // هل هي في الـ mempool أم مؤكدة؟
+    const confirmed = tx.status && tx.status.confirmed;
+    if (confirmed) {
+      res.innerHTML = `<div class="info-box" style="background:var(--info-bg);color:#5b7fa6;border:1.5px solid rgba(180,196,212,0.3)">
+        ℹ️ هذه المعاملة <strong>مؤكدة بالفعل</strong> في Block ${tx.status.block_height}. CPFP غير مطلوب.
+      </div>`;
+      return;
+    }
+
+    // احسب رسوم الأب وحجمه
+    const parentFee  = tx.fee || 0;
+    const parentVsize = tx.weight ? Math.ceil(tx.weight / 4) : (tx.size || 0);
+    const parentRate  = parentVsize ? (parentFee / parentVsize).toFixed(2) : '?';
+
+    // عرض الـ outputs
+    let outsHtml = tx.vout.map((o, i) => {
+      const val  = o.value;
+      const addr = o.scriptpubkey_address || '(script غير قياسي)';
+      return `<div class="utxo-card" id="cpfp-out-${i}" onclick="cpfpSelectOutput(${i})" style="cursor:pointer;margin-bottom:6px">
+        <div class="utxo-card-row">
+          <div style="flex:1;min-width:0">
+            <div class="utxo-txid">Output [${i}] — ${addr.slice(0,28)}${addr.length>28?'…':''}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">vout: ${i}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div class="utxo-val">${(val/1e8).toFixed(8)} BTC</div>
+            <div style="font-size:10px;color:var(--text2)">${val.toLocaleString()} sat</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    res.innerHTML = `<div class="info-box" style="background:var(--accent-dim);border:1.5px solid rgba(139,115,85,0.2);margin-bottom:10px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">
+        <div>📦 الحجم: <strong>${parentVsize} vB</strong></div>
+        <div>💸 الرسوم: <strong>${parentFee.toLocaleString()} sat</strong></div>
+        <div>⚡ معدل الرسوم الحالي: <strong style="color:${feeRateColor(parseFloat(parentRate))}">${parentRate} sat/vB</strong></div>
+        <div>📤 عدد الـ Outputs: <strong>${tx.vout.length}</strong></div>
+      </div>
+    </div>
+    <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">اختر الـ Output الذي تملكه:</div>
+    ${outsHtml}`;
+
+    document.getElementById('cpfpChildSection').style.display = '';
+
+    // ملء حقل outputs في القسم الثاني
+    document.getElementById('cpfpOutputsList').innerHTML = outsHtml.replace(/onclick="cpfpSelectOutput\((\d+)\)"/g,
+      'onclick="cpfpSelectOutput($1)"');
+
+    cpfpUpdateCalc();
+
+  } catch(e) {
+    res.innerHTML = `<div class="info-box danger">❌ ${e.message}</div>`;
+  }
+}
+
+function cpfpSelectOutput(vout) {
+  if (!cpfpParentData) return;
+  cpfpSelectedOut = { vout, ...cpfpParentData.vout[vout] };
+
+  // تحديث التحديد البصري في كلا القسمين
+  cpfpParentData.vout.forEach((_, i) => {
+    ['cpfp-out-' + i].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('selected', i === vout);
+    });
+  });
+
+  // ملء عنوان المرسل تلقائياً
+  const addr = cpfpParentData.vout[vout].scriptpubkey_address;
+  if (addr) {
+    const addrEl = document.getElementById('cpfpMyAddr');
+    if (addrEl && !addrEl.value.trim()) addrEl.value = addr;
+    // إظهار حقول خاصة بالنوع
+    const trRow = document.getElementById('cpfpTaprootTweakRow');
+    const rsRow = document.getElementById('cpfpRedeemScriptRow');
+    if (trRow) trRow.style.display = (addr.startsWith('bc1p')||addr.startsWith('tb1p')) ? '' : 'none';
+    if (rsRow) rsRow.style.display = (addr.startsWith('2')||addr.startsWith('3')) ? '' : 'none';
+  }
+  cpfpUpdateCalc();
+}
+
+function cpfpUpdateCalc() {
+  const el = document.getElementById('cpfpCalcResult');
+  if (!el || !cpfpParentData) return;
+
+  const targetRate = parseFloat(document.getElementById('cpfpTargetRate').value) || 0;
+  if (!targetRate) { el.innerHTML = ''; return; }
+
+  const parentFee   = cpfpParentData.fee || 0;
+  const parentVsize = cpfpParentData.weight ? Math.ceil(cpfpParentData.weight / 4) : (cpfpParentData.size || 0);
+
+  // تقدير حجم TX الابن
+  const myAddr  = (document.getElementById('cpfpMyAddr').value || '').trim();
+  const type    = detectScriptType(myAddr) || 'p2wpkh';
+  const childVsize = estimateVsize(type, 1, 1);
+
+  // رسوم TX الابن المطلوبة
+  // target_rate × (parentVsize + childVsize) - parentFee
+  const totalNeeded = Math.ceil(targetRate * (parentVsize + childVsize));
+  const childFee    = Math.max(totalNeeded - parentFee, 1);
+  const outputVal   = cpfpSelectedOut ? (cpfpSelectedOut.value - childFee) : null;
+
+  const childRate   = (childFee / childVsize).toFixed(1);
+  const packageRate = ((parentFee + childFee) / (parentVsize + childVsize)).toFixed(2);
+  const rateColor   = feeRateColor(parseFloat(packageRate));
+
+  if (outputVal !== null && outputVal < 546) {
+    el.innerHTML = `<div class="info-box danger" style="font-size:11px">⚠️ الـ output الناتج (${outputVal} sat) أقل من الـ dust limit (546 sat). ارفع الـ target rate أو اختر output بقيمة أكبر.</div>`;
+    return;
+  }
+
+  el.innerHTML = `<div class="info-box" style="background:var(--accent-dim);border:1.5px solid rgba(139,115,85,0.2);font-size:12px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+      <div>👶 حجم الابن: <strong>~${childVsize} vB</strong></div>
+      <div>💸 رسوم الابن: <strong>${childFee.toLocaleString()} sat</strong></div>
+      <div>⚡ معدل الابن: <strong>${childRate} sat/vB</strong></div>
+      <div>📦 Package rate: <strong style="color:${rateColor}">${packageRate} sat/vB ✅</strong></div>
+      ${outputVal !== null ? `<div style="grid-column:1/-1">💰 ستستقبل: <strong>${outputVal.toLocaleString()} sat</strong> (${(outputVal/1e8).toFixed(8)} BTC)</div>` : ''}
+    </div>
+  </div>`;
+}
+
+async function cpfpBuildAndSign() {
+  const signRes = document.getElementById('cpfpSignResult');
+  signRes.innerHTML = '';
+
+  if (!cpfpParentData)  { signRes.innerHTML = '<div class="info-box danger">❌ حلّل معاملة الأب أولاً.</div>'; return; }
+  if (!cpfpSelectedOut) { signRes.innerHTML = '<div class="info-box danger">❌ اختر الـ output الذي تملكه.</div>'; return; }
+
+  const myAddr     = (document.getElementById('cpfpMyAddr').value || '').trim();
+  const destAddr   = (document.getElementById('cpfpDestAddr').value || '').trim() || myAddr;
+  const targetRate = parseFloat(document.getElementById('cpfpTargetRate').value) || 0;
+  const privRaw    = (document.getElementById('cpfpPrivKey').value || '').trim();
+  const tweak      = (document.getElementById('cpfpTaprootTweak').value || '').trim() || null;
+  const rs         = (document.getElementById('cpfpRedeemScript').value || '').trim() || null;
+
+  if (!myAddr)    { signRes.innerHTML = '<div class="info-box danger">❌ أدخل عنوانك.</div>'; return; }
+  if (!targetRate){ signRes.innerHTML = '<div class="info-box danger">❌ أدخل الـ target fee rate.</div>'; return; }
+  if (!privRaw)   { signRes.innerHTML = '<div class="info-box danger">❌ أدخل المفتاح الخاص.</div>'; return; }
+
+  try {
+    // parse private key
+    const { bytes: privBytes, compressed } = parsePrivKey(privRaw);
+    const pubKey  = getPublicKey(privBytes, compressed);
+    const type    = detectScriptType(myAddr);
+    if (!type) throw new Error('نوع العنوان غير مدعوم: ' + myAddr);
+
+    const parentFee   = cpfpParentData.fee || 0;
+    const parentVsize = cpfpParentData.weight ? Math.ceil(cpfpParentData.weight / 4) : (cpfpParentData.size || 0);
+    const childVsize  = estimateVsize(type, 1, 1);
+    const totalNeeded = Math.ceil(targetRate * (parentVsize + childVsize));
+    const childFee    = Math.max(totalNeeded - parentFee, 1);
+    const outputVal   = cpfpSelectedOut.value - childFee;
+
+    if (outputVal < 546) throw new Error(`الـ output الناتج (${outputVal} sat) أقل من الـ dust limit.`);
+
+    // بناء TX الابن يدوياً
+    const parentTxid = cpfpParentData.txid;
+    const vout       = cpfpSelectedOut.vout;
+
+    // بناء unsigned TX
+    const destSpk   = addressToScriptPK(destAddr);
+    const unsignedHex = buildSimpleTx(parentTxid, vout, outputVal, destSpk);
+
+    // fakeUTXO للتوقيع
+    const fakeUTXOs = [{ txid: parentTxid, vout, value: cpfpSelectedOut.value, scriptPubKey: addressToScriptPK(myAddr) }];
+
+    let signed;
+    if (type === 'p2pkh') {
+      signed = signP2PKH_direct(unsignedHex, privBytes, pubKey, myAddr, fakeUTXOs);
+    } else if (type === 'p2wpkh') {
+      signed = signP2WPKH_direct(unsignedHex, privBytes, pubKey, fakeUTXOs);
+    } else if (type === 'p2sh-p2wpkh') {
+      signed = signP2SH_P2WPKH_direct(unsignedHex, privBytes, pubKey, fakeUTXOs, rs);
+    } else if (type === 'p2tr') {
+      signed = signP2TR_direct(unsignedHex, privBytes, fakeUTXOs, tweak);
+    } else {
+      throw new Error('نوع العنوان غير مدعوم للتوقيع.');
+    }
+
+    cpfpSignedHex = signed;
+
+    const packageRate = ((parentFee + childFee) / (parentVsize + childVsize)).toFixed(2);
+
+    signRes.innerHTML = `<div class="info-box teal">✅ تم التوقيع بنجاح!<br>
+      <span style="font-size:11px">Package rate: <strong>${packageRate} sat/vB</strong> &nbsp;·&nbsp; رسوم الابن: <strong>${childFee.toLocaleString()} sat</strong></span>
+    </div>`;
+
+    // عرض في قسم البث
+    document.getElementById('cpfpBroadcastSection').style.display = '';
+    document.getElementById('cpfpSignedDisplay').innerHTML = `
+      <div class="result-panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:12px;font-weight:600;color:var(--text2)">Signed TX Hex (Child)</span>
+          <button class="btn btn-secondary" style="padding:4px 10px;font-size:11px" onclick="copyText('${signed}', this)">نسخ</button>
+        </div>
+        <div style="font-family:var(--mono);font-size:10px;word-break:break-all;color:var(--text3);max-height:80px;overflow-y:auto">${signed}</div>
+      </div>`;
+
+  } catch(e) {
+    signRes.innerHTML = `<div class="info-box danger">❌ ${e.message}</div>`;
+  }
+}
+
+/* بناء TX بسيطة: input واحد، output واحد، بدون توقيع */
+function buildSimpleTx(txid, vout, value, scriptPubKey) {
+  const txidLE = txid.match(/../g).reverse().join('');
+  const voutHex = uint32LE_cpfp(vout);
+  const seqHex  = 'fffffffd';
+  const spkLen  = varInt(scriptPubKey.length / 2);
+  const valHex  = uint64LE_cpfp(value);
+  return (
+    '02000000'   +  // version
+    '01'         +  // input count
+    txidLE       +
+    voutHex      +
+    '00'         +  // scriptSig empty
+    seqHex       +
+    '01'         +  // output count
+    valHex       +
+    spkLen       +
+    scriptPubKey +
+    '00000000'      // locktime
+  );
+}
+
+function uint32LE_cpfp(n) {
+  return [(n>>>0)&0xff,(n>>>8)&0xff,(n>>>16)&0xff,(n>>>24)&0xff].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function uint64LE_cpfp(n) {
+  const lo = n >>> 0, hi = Math.floor(n / 0x100000000) >>> 0;
+  return uint32LE_cpfp(lo) + uint32LE_cpfp(hi);
+}
+
+async function cpfpBroadcast() {
+  if (!cpfpSignedHex) return;
+  const btn = document.getElementById('cpfpBroadcastBtn');
+  const res = document.getElementById('cpfpBroadcastResult');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ جارٍ البث...';
+
+  const base = mempoolBase(getNet());
+  try {
+    const r   = await fetch(`${base}/api/tx`, { method:'POST', headers:{'Content-Type':'text/plain'}, body: cpfpSignedHex });
+    const txt = await r.text();
+    if (r.ok) {
+      res.innerHTML = `<div class="info-box teal">
+        ✅ <strong>تم بث معاملة CPFP بنجاح!</strong><br>
+        <span style="font-family:var(--mono);font-size:10px;word-break:break-all">${txt}</span><br>
+        <a href="${base}/tx/${txt}" target="_blank" style="color:var(--accent-dark);font-size:11px;font-weight:600">🔗 تتبع على mempool.space</a>
+      </div>`;
+    } else {
+      res.innerHTML = `<div class="info-box danger">❌ فشل البث:<br>${txt}</div>`;
+    }
+  } catch(e) {
+    res.innerHTML = `<div class="info-box danger">❌ خطأ في الاتصال: ${e.message}</div>`;
+  }
+  btn.disabled = false;
+  btn.innerHTML = '📡 بث معاملة CPFP';
+}
+
+/* Dark Mode Toggle */
+function toggleDarkMode() {
+  const html = document.documentElement;
+  const icon = document.getElementById('themeIcon');
+  const isDark = html.classList.toggle('dark-mode');
+  icon.textContent = isDark ? '🌙' : '☀️';
+  try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch(e){}
+}
+
+(function() {
+  try {
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark') {
+      document.documentElement.classList.add('dark-mode');
+      document.addEventListener('DOMContentLoaded', function() {
+        const icon = document.getElementById('themeIcon');
+        if (icon) icon.textContent = '🌙';
+      });
+    }
+  } catch(e){}
+})();
+
+/* init */
+updateBroadcastLinks();
+
+/* ── PWA: تسجيل Service Worker ── */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./sw.js')
+      .then(function (reg) {
+        console.log('[PWA] Service Worker مسجّل بنجاح:', reg.scope);
+      })
+      .catch(function (err) {
+        console.warn('[PWA] فشل تسجيل Service Worker:', err);
+      });
+  });
+}
+
+</script>
+</body>
+</html>
